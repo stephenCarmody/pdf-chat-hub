@@ -9,5 +9,5 @@ def create_summary_chain():
     # Define LLM chain
     llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
     summary_chain = create_stuff_documents_chain(llm, prompt)
-    
+
     return summary_chain

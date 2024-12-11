@@ -8,7 +8,8 @@ def create_db(docs: list) -> FAISS:
     db = FAISS.from_documents(docs, embeddings)
     return db
 
+
 def create_retriever(db: FAISS) -> FAISS:
     """Create a retriever from a FAISS database."""
-    retriever = db.as_retriever(search_kwargs={'k': 3})
+    retriever = db.as_retriever(search_kwargs={"k": 3})
     return retriever

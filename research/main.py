@@ -12,34 +12,35 @@ from brain.vector_db import create_db, create_retriever
 
 dotenv.load_dotenv()
 
-with open('config.yml', 'r') as file:
+with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
-file_path = os.path.join(os.path.dirname(__file__), config['DOCS_DIR'], config['TEST_FILE'])
+file_path = os.path.join(
+    os.path.dirname(__file__), config["DOCS_DIR"], config["TEST_FILE"]
+)
 
 if __name__ == "__main__":
     print("Hello, World!")
 
     pages = load_pdf(file_path)
     docs = chunk_docs(pages)
-    
+
     db = create_db(docs)
     retriever = create_retriever(db)
 
     rag_chain = create_rag_chain(retriever)
 
-    
     router = create_router()
 
     while True:
         query = input("Enter a question (or 'quit' to exit): ")
-        
-        if query.lower() == 'quit':
+
+        if query.lower() == "quit":
             print("Goodbye!")
             break
-            
+
         result = router.invoke(query)
-        
+
         if result.task.lower() == "q_and_a":
             result = rag_chain.invoke(query)
         elif result.task.lower() == "summary":
@@ -54,4 +55,4 @@ if __name__ == "__main__":
             continue
 
         print(result)
-        print("\n" + "-"*50 + "\n")  # Add separator between questions
+        print("\n" + "-" * 50 + "\n")  # Add separator between questions

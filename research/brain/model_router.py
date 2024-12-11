@@ -28,10 +28,9 @@ def create_router():
     You will be given a user query and you will need to determine which task/action is most relevant to answer the user's question.
     """
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("user", "{query}")
-    ])
+    prompt = ChatPromptTemplate.from_messages(
+        [("system", system_prompt), ("user", "{query}")]
+    )
 
     router = prompt | structured_llm
     return router

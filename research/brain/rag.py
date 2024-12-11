@@ -21,8 +21,8 @@ def create_rag_chain(retriever: FAISS) -> RunnablePassthrough:
 
     chain = (
         {"context": retriever, "question": RunnablePassthrough()}
-        | prompt 
-        | llm 
+        | prompt
+        | llm
         | StrOutputParser()
     )
 

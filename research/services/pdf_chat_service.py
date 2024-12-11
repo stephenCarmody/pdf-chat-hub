@@ -25,7 +25,7 @@ class PDFChatService:
             return "Please upload a document first."
 
         result = self.router.invoke(query)
-        
+
         if result.task.lower() == "q_and_a":
             result = self.rag_chain.invoke(query)
         elif result.task.lower() == "summary":
@@ -42,11 +42,11 @@ class PDFChatService:
         try:
             self.pages = load_pdf(file_path)
             docs = chunk_docs(self.pages)
-            
+
             # Prepare full text document for summarization
             full_text = "\n".join([page.page_content for page in self.pages])
             self.full_text_doc = [Document(page_content=full_text, metadata={})]
-            
+
             # Create vector DB and chains
             db = create_db(docs)
             retriever = create_retriever(db)
