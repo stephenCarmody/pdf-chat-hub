@@ -1,3 +1,24 @@
-
 run:
     poetry run python main.py
+
+# Upload the Bitcoin whitepaper
+upload-bitcoin:
+    curl -X POST "http://0.0.0.0:8000/upload" \
+        -H "Content-Type: multipart/form-data" \
+        -F "file=@docs/Bitcoin - A Peer-to-Peer Electronic Cash System.pdf"
+
+# Query the API with a custom message
+query message:
+    curl -X POST "http://0.0.0.0:8000/query" \
+        -H "Content-Type: application/json" \
+        -d "{\"query\": \"{{message}}\"}"
+
+# Example quick query about the paper
+query-paper:
+    curl -X POST "http://0.0.0.0:8000/query" \
+        -H "Content-Type: application/json" \
+        -d "{\"query\": \"What is this paper about?\"}"
+
+# Start the FastAPI server with correct PYTHONPATH
+serve:
+    PYTHONPATH=. poetry run python routers/router.py

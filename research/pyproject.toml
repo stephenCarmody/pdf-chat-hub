@@ -14,6 +14,9 @@ langchain-openai = "^0.2.12"
 faiss-cpu = "^1.9.0.post1"
 python-dotenv = "^1.0.1"
 pydantic = "^2.10.3"
+fastapi = "^0.115.6"
+uvicorn = "^0.32.1"
+python-multipart = "^0.0.19"
 
 
 [tool.poetry.group.dev.dependencies]

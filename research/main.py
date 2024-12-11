@@ -6,10 +6,10 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from rag import create_rag_chain
-from router import create_router
-from summariser import create_summary_chain
-from document_processing import load_pdf, chunk_docs
+from brain.rag import create_rag_chain
+from brain.model_router import create_router
+from brain.summariser import create_summary_chain
+from brain.document_processing import load_pdf, chunk_docs
 
 with open('config.yml', 'r') as file:
     config = yaml.safe_load(file)
