@@ -3,6 +3,7 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 from models.api_models import AppInfo, QueryRequest
 from services.pdf_chat_service import PDFChatService
@@ -11,6 +12,14 @@ UPLOAD_DIR = Path(tempfile.gettempdir()) / "pdf_chat_uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Your Vue dev server URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 pdf_service = PDFChatService()
 
