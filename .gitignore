@@ -15,6 +15,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node/Vue
 node_modules
 .DS_Store
 dist
@@ -36,3 +37,17 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Terraform files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+.terraform.lock.hcl
