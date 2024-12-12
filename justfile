@@ -3,3 +3,7 @@ serve-frontend:
 
 serve-backend:
     cd backend && uvicorn routers.router:app --reload
+
+get-frontend-url:
+    cd infrastructure && terraform output cloudfront_domain
+

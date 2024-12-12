@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8000' // Your FastAPI backend URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export const uploadPDF = async (file) => {
   const formData = new FormData()
