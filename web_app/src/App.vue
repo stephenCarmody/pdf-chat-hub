@@ -135,7 +135,7 @@ const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (file && file.type === 'application/pdf') {
     try {
-      const response = await uploadPDF(file)
+      const response = await uploadPDF(file, sessionId.value)
       const newPdf = {
         id: Date.now(),
         name: file.name,
@@ -199,7 +199,8 @@ const sendMessage = async () => {
   
   try {
     const response = await axios.post(`${API_URL}/query`, {
-      query: userMessage.content
+      query: userMessage.content,
+      session_id: sessionId.value
     })
     
     messages.value.push({

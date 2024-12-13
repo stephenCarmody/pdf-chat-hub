@@ -9,7 +9,7 @@ export const uploadPDF = async (file) => {
   formData.append('file', file)
   
   try {
-    const response = await axios.post(`${API_URL}/upload`, formData, {
+    const response = await axios.post(`${API_URL}/upload?session_id=${sessionId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

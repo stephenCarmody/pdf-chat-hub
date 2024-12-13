@@ -32,7 +32,7 @@ def get_session():
 @router.post("/query")
 async def query(
     request: QueryRequest,
-    pdf_service: Annotated[PDFChatService, Depends(get_pdf_service)]
+    pdf_service: Annotated[PDFChatService, Depends(get_pdf_service)],
 ):
     result = pdf_service.query(request.query)
     return {"message": result}
@@ -40,10 +40,11 @@ async def query(
 @router.post("/upload")
 async def upload_file(
     pdf_service: Annotated[PDFChatService, Depends(get_pdf_service)],
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    session_id: str = None
 ):
     try:
-        print(f"Starting file upload... Python version: {sys.version}")
+        print(f"Starting file upload... Python version: {sys.version}. Session ID: {session_id}")
         print(f"Upload directory: {UPLOAD_DIR}")
         print(f"File name: {file.filename}")
         

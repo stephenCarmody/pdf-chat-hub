@@ -22,7 +22,7 @@ lambda-push:
     docker push {{ECR_URL}}/pdf-chat-api:latest
 
 lambda-deploy:
-    cd infrastructure && terraform apply -replace="aws_lambda_function.api"
+    cd infrastructure && terraform apply -target="module.lambda"
 
 lambda-run-local:
     cd backend && docker build --platform linux/amd64 --build-arg PLATFORM=linux/arm64 -t pdf-chat-api . 
