@@ -102,6 +102,7 @@ import VuePdfEmbed from 'vue-pdf-embed'
 import { uploadPDF } from '@/services/api'
 import axios from 'axios'
 import { marked } from 'marked'
+import { API_URL } from '@/services/api'
 
 const uploadedPdfs = ref([])
 const selectedPdf = ref(null)
@@ -182,7 +183,7 @@ const sendMessage = async () => {
   isLoading.value = true
   
   try {
-    const response = await axios.post('http://localhost:8000/query', {
+    const response = await axios.post(`${API_URL}/query`, {
       query: userMessage.content
     })
     
