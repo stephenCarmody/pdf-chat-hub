@@ -12,3 +12,8 @@ output "s3_bucket_arn" {
   description = "The ARN of the S3 bucket"
   value       = module.s3_vuejs.s3_bucket_arn
 } 
+
+output "api_gateway_url" {
+  description = "The URL of the API Gateway endpoint"
+  value       = "${aws_apigatewayv2_api.api.api_endpoint}"
+}
