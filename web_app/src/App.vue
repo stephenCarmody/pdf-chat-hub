@@ -115,6 +115,21 @@ const messages = ref([])
 const newMessage = ref('')
 const chatContainerRef = ref(null)
 const isLoading = ref(false)
+const sessionId = ref(null)
+
+const getSessionId = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/session`)
+    sessionId.value = response.data.session
+    console.log('Session ID:', sessionId.value)
+  } catch (error) {
+    console.error('Failed to get session ID:', error)
+  }
+}
+
+onMounted(async () => {
+  await getSessionId()
+})
 
 const handleFileUpload = async (event) => {
   const file = event.target.files[0]

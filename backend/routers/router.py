@@ -9,6 +9,8 @@ from models.api_models import AppInfo, QueryRequest
 from services.pdf_chat_service import PDFChatService
 from dependencies.services import get_pdf_service
 
+import uuid
+
 UPLOAD_DIR = Path("/tmp/pdf_chat_uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -21,6 +23,11 @@ def read_root():
         version="0.1.0",
         description="A simple chatbot that can answer questions about a PDF file.",
     )
+
+@router.get("/session")
+def get_session():
+    return {"session": str(uuid.uuid4())}
+
 
 @router.post("/query")
 async def query(
