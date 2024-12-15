@@ -34,7 +34,7 @@ async def query(
     request: QueryRequest,
     pdf_service: Annotated[PDFChatService, Depends(get_pdf_service)],
 ):
-    result = pdf_service.query(request.query)
+    result = pdf_service.query(request.query, request.session_id)
     return {"message": result}
 
 @router.post("/upload")
@@ -58,7 +58,7 @@ async def upload_file(
             print(f"File written to {file_path}")
             
             print("Starting PDF processing...")
-            pdf_service.upload(str(file_path))
+            pdf_service.upload(str(file_path), session_id)
             print("PDF processing completed successfully")
             
             return {"message": "File uploaded successfully!", "filename": file.filename}

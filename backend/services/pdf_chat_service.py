@@ -19,114 +19,108 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class PDFChatService:
-    def __init__(self, session_id: str):
-        logger.info(f"Initializing PDFChatService with session_id: {session_id}")
-
-        self.session_id = session_id
+    def __init__(self):
+        logger.info("Initializing PDFChatService")
         self.bucket_name = os.getenv("SESSION_STATE_BUCKET")
         self.s3_client = boto3.client("s3")
+        self.router = create_router()
 
-        loaded_state = self._load_session_state()
-        if loaded_state:
-            logger.info(f"Loaded state from S3 for session_id: {session_id}")
-        else:
-            logger.info(f"No state found for session_id: {session_id}. Creating new state!")
-            self.pages = None
-            self.rag_chain = None
-            self.summary_chain = None
-            self.full_text_doc = None
-            self.router = create_router()
-
-    def query(self, query: str):
+    def query(self, query: str, session_id: str):
         """
         Query the document with a question / task.
         """
-        if not self.rag_chain or not self.summary_chain:
+        # Load state for this session
+        state = self._load_session_state(session_id)
+        if not state:
             return "Please upload a document first."
 
-        result = self.router.invoke(query)
-
-        if result.task.lower() == "q_and_a":
-            result = self.rag_chain.invoke(query)
-        elif result.task.lower() == "summary":
-            result = self.summary_chain.invoke({"context": self.full_text_doc})
-        else:
-            return "Invalid task"
-
-        self._save_session_state()
-        return result
-
-    def upload(self, file_path: str) -> None:
-        """
-        Upload a PDF file to the service. Resets the chat history.
-        """
         try:
-            self.pages = load_pdf(file_path)
-            docs = chunk_docs(self.pages)
+            # Recreate documents from stored state
+            docs = [Document(
+                page_content=doc['content'],
+                metadata=doc['metadata']
+            ) for doc in state['docs']]
 
-            # Prepare full text document for summarization
-            full_text = "\n".join([page.page_content for page in self.pages])
-            self.full_text_doc = [Document(page_content=full_text, metadata={})]
-
-            # Create vector DB and chains
+            # Recreate chains for each query
             db = create_db(docs)
             retriever = create_retriever(db)
-            self.rag_chain = create_rag_chain(retriever)
-            self.summary_chain = create_summary_chain()
+            rag_chain = create_rag_chain(retriever)
+            summary_chain = create_summary_chain()
 
-            self._save_session_state()
+            # Route the query
+            result = self.router.invoke(query)
+
+            if result.task.lower() == "q_and_a":
+                result = rag_chain.invoke(query)
+            elif result.task.lower() == "summary":
+                full_text_doc = [Document(page_content=state['full_text'], metadata={})]
+                result = summary_chain.invoke({"context": full_text_doc})
+            else:
+                return "Invalid task"
+
+            return result
+
+        except Exception as e:
+            raise Exception(f"Failed to process query: {str(e)}")
+
+    def upload(self, file_path: str, session_id: str) -> None:
+        """
+        Upload a PDF file to the service. Creates new session state.
+        """
+        try:
+            pages = load_pdf(file_path)
+            docs = chunk_docs(pages)
+
+            # Create vector DB and save the documents
+            db = create_db(docs)
+            
+            # Save only the document content and metadata
+            serializable_pages = [{
+                'content': page.page_content,
+                'metadata': page.metadata
+            } for page in pages]
+
+            # Prepare full text for summarization
+            full_text = "\n".join([page.page_content for page in pages])
+            
+            # Save state with only serializable data
+            self._save_session_state(session_id, {
+                'pages': serializable_pages,
+                'full_text': full_text,
+                'docs': [{
+                    'content': doc.page_content,
+                    'metadata': doc.metadata
+                } for doc in docs]
+            })
+
         except Exception as e:
             raise Exception(f"Failed to process PDF: {str(e)}")
 
-    def _save_session_state(self):
+    def _save_session_state(self, session_id: str, state):
         """Save current state to S3."""
-        # Only save the text content and metadata, not the full objects
-        state = {
-            'pages_content': [{'page_content': page.page_content, 'metadata': page.metadata} for page in self.pages] if self.pages else None,
-            'full_text': self.full_text_doc[0].page_content if self.full_text_doc else None
-        }
-        
         try:
             serialized_state = pickle.dumps(state)
             self.s3_client.put_object(
                 Bucket=self.bucket_name,
-                Key=self._get_session_state_key(),
+                Key=self._get_session_state_key(session_id),
                 Body=serialized_state
             )
         except Exception as e:
             raise Exception(f"Failed to save state to S3: {str(e)}")
 
-    def _load_session_state(self):
+    def _load_session_state(self, session_id: str):
         """Load state from S3."""
         try:
             response = self.s3_client.get_object(
                 Bucket=self.bucket_name,
-                Key=self._get_session_state_key()
+                Key=self._get_session_state_key(session_id)
             )
-            serialized_state = response['Body'].read()
-            state = pickle.loads(serialized_state)
-            
-            if state:
-                # Reconstruct the Document objects
-                self.pages = [Document(page_content=p['page_content'], metadata=p['metadata']) 
-                             for p in state['pages_content']] if state['pages_content'] else None
-                self.full_text_doc = [Document(page_content=state['full_text'], metadata={})] if state['full_text'] else None
-                
-                # Recreate the chains
-                if self.pages:
-                    docs = chunk_docs(self.pages)
-                    db = create_db(docs)
-                    retriever = create_retriever(db)
-                    self.rag_chain = create_rag_chain(retriever)
-                    self.summary_chain = create_summary_chain()
-                    self.router = create_router()
-                return state  # Return the state instead of True
-            return None
+            return pickle.loads(response['Body'].read())
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
                 return None
             raise Exception(f"Failed to load state from S3: {str(e)}")
 
-    def _get_session_state_key(self) -> str:
+    def _get_session_state_key(self, session_id: str) -> str:
         """Generate S3 key for the session state."""
-        return f"chat_states/{self.session_id}/state.pkl"
+        return f"chat_states/{session_id}/state.pkl"
