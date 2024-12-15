@@ -22,13 +22,16 @@ lambda-push:
     docker push {{ECR_URL}}/pdf-chat-api:latest
 
 lambda-deploy:
-    cd infrastructure && terraform apply -target="module.lambda"
+    cd infrastructure && terraform apply -replace="aws_lambda_function.api" \
+        -target="aws_lambda_permission.api_gateway" \
+        -target="aws_lambda_permission.api_gateway_root"
 
 lambda-run-local:
     cd backend && docker build --platform linux/amd64 --build-arg PLATFORM=linux/arm64 -t pdf-chat-api . 
     cd backend && docker run -p 9000:8080 \
         -e OPENAI_API_KEY=$(grep OPENAI_API_KEY .env | cut -d '=' -f2 | tr -d ' "') \
         -e OPENAI_SECRET_NAME="pdf-chat/openai-api-key" \
+        -e SESSION_STATE_BUCKET="pdf-chat-lambda-state" \
         -e AWS_REGION="eu-west-1" \
         -e AWS_DEFAULT_REGION="eu-west-1" \
         -e AWS_ACCESS_KEY_ID="$(aws configure get aws_access_key_id)" \

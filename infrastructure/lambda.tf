@@ -5,11 +5,13 @@ resource "aws_lambda_function" "api" {
   image_uri    = "${aws_ecr_repository.lambda_ecr.repository_url}:latest"
   timeout      = 60
   memory_size  = 512
+  source_code_hash = timestamp()
 
   environment {
     variables = {
       CLOUDFRONT_DOMAIN = aws_cloudfront_distribution.s3_distribution.domain_name,
-      OPENAI_SECRET_NAME = aws_secretsmanager_secret.openai_api_key.name
+      OPENAI_SECRET_NAME = aws_secretsmanager_secret.openai_api_key.name,
+      SESSION_STATE_BUCKET = aws_s3_bucket.lambda_state.bucket
     }
   }
 
