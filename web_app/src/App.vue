@@ -3,7 +3,7 @@
     <!-- Left Sidebar -->
     <div class="sidebar" :style="{ width: '250px' }">
       <div class="upload-button">
-        <label class="upload-label">
+        <label class="upload-label" :class="{ 'opacity-50 cursor-not-allowed': isUploading }">
           <FileText class="icon" />
           <span>Upload PDF</span>
           <input 
@@ -11,6 +11,7 @@
             accept=".pdf" 
             class="hidden-input" 
             @change="handleFileUpload"
+            :disabled="isUploading"
           >
         </label>
       </div>
@@ -37,7 +38,24 @@
       ref="pdfContainerRef"
       :style="{ width: `calc(100% - 550px + ${rightPaneWidth}px)` }"
     >
-      <div v-if="!selectedPdf" class="pdf-placeholder">
+      <div v-if="isUploading" class="upload-loading">
+        <svg class="animate-spin spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8H4z"
+          ></path>
+        </svg>
+      </div>
+      <div v-else-if="!selectedPdf" class="pdf-placeholder">
         No PDF selected
       </div>
       <VuePdfEmbed
@@ -101,7 +119,6 @@ import { FileText } from 'lucide-vue-next'
 import VuePdfEmbed from 'vue-pdf-embed'
 import { uploadPDF } from '@/services/api'
 import axios from 'axios'
-import { marked } from 'marked'
 import { API_URL } from '@/services/api'
 
 const uploadedPdfs = ref([])
@@ -116,6 +133,7 @@ const newMessage = ref('')
 const chatContainerRef = ref(null)
 const isLoading = ref(false)
 const sessionId = ref(null)
+const isUploading = ref(false)
 
 const getSessionId = async () => {
   try {
@@ -124,6 +142,10 @@ const getSessionId = async () => {
     console.log('Session ID:', sessionId.value)
   } catch (error) {
     console.error('Failed to get session ID:', error)
+    messages.value.push({
+      type: 'error',
+      content: 'Failed to initialize session. Please refresh and try again.'
+    })
   }
 }
 
@@ -134,8 +156,18 @@ onMounted(async () => {
 const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (file && file.type === 'application/pdf') {
+    if (!sessionId.value) {
+      console.error('Session ID is not available.')
+      messages.value.push({
+        type: 'error',
+        content: 'Session ID is not available. Please try again later.'
+      })
+      return
+    }
+    isUploading.value = true // Start loading
     try {
-      const response = await uploadPDF(file, sessionId.value)
+      console.log('Uploading PDF with session ID:', sessionId.value)
+      const response = await uploadPDF(file, sessionId.value) // Pass sessionId.value
       const newPdf = {
         id: Date.now(),
         name: file.name,
@@ -147,6 +179,8 @@ const handleFileUpload = async (event) => {
       console.log('Upload successful:', response.message)
     } catch (error) {
       console.error('Upload failed:', error)
+    } finally {
+      isUploading.value = false // Stop loading
     }
   }
 }
@@ -281,8 +315,25 @@ html, body {
   cursor: pointer;
 }
 
+.upload-label.opacity-50 {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .hidden-input {
   display: none;
+}
+
+.upload-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.spinner {
+  width: 40px; /* You might want to make it larger in this context */
+  height: 40px;
 }
 
 .pdf-list {
@@ -472,41 +523,23 @@ html, body {
   }
 }
 
-.message.loading {
-  background-color: #e5e7eb;
-  align-self: flex-start;
-  min-width: 60px;
+/* Spinner Styles */
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
-.message-content {
-  line-height: 1.5;
+.spinner {
+  width: 16px; /* Smaller size */
+  height: 16px;
 }
 
-.message-content h3 {
-  margin: 1rem 0 0.5rem 0;
-  font-size: 1.1em;
-  font-weight: 600;
-}
-
-.message-content .list-item {
-  margin: 0.5rem 0;
-  padding-left: 1rem;
-}
-
-.message-content strong {
-  font-weight: 600;
-}
-
-.message.assistant {
-  background-color: #e5e7eb;
-  align-self: flex-start;
-  max-width: 90%; /* Increased max-width for better readability */
-}
-
-.message.user {
-  background-color: #3b82f6;
-  color: white;
-  align-self: flex-end;
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Add some spacing between messages */

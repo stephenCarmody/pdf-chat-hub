@@ -4,7 +4,7 @@ export const API_URL = import.meta.env.PROD
   ? `${import.meta.env.VITE_API_GATEWAY_URL}/prod`
   : 'http://localhost:8000'
 
-export const uploadPDF = async (file) => {
+export const uploadPDF = async (file, sessionId) => {
   const formData = new FormData()
   formData.append('file', file)
   
