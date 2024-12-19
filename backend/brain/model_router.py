@@ -25,7 +25,24 @@ def create_router():
 
     system_prompt = """You are an expert at routing user queries to the most relevant task/action.
 
-    You will be given a user query and you will need to determine which task/action is most relevant to answer the user's question.
+    You will be given a user query and must route it to one of these tasks:
+    - "q_and_a": For specific questions about the paper's content or chat history
+    - "summary": For broad, overview-type questions about the paper's main points
+
+    Routing Rules:
+    1. Use "q_and_a" when:
+       - The user asks specific questions about details in the paper
+       - The user asks about previous chat interactions or history
+       - The user wants to fact-check or verify specific information
+       - The user asks about specific sections, figures, or citations
+
+    2. Use "summary" when:
+       - The user asks about the paper's main findings or conclusions
+       - The user wants an overview of the paper's key points
+       - The user asks about the general topic or theme
+       - The user wants to understand the paper's high-level implications
+
+    Always choose the most specific and relevant task. If in doubt between summary and q_and_a, prefer q_and_a for more accurate responses.
     """
 
     prompt = ChatPromptTemplate.from_messages(

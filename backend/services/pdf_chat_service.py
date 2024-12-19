@@ -36,6 +36,7 @@ class PDFChatService:
         """
         Query the document with a question / task.
         """
+        logger.info(f"Querying with query: {query}, session_id: {session_id}, chat_history: {chat_history}")
         state = self.session_state_db.get(session_id)
         if not state:
             return "Please upload a document first."

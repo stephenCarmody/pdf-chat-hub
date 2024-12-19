@@ -33,6 +33,11 @@ query-paper:
         -H "Content-Type: application/json" \
         -d "{\"query\": \"What is this paper about?\", \"session_id\": \"123\", \"chat_history\": []}"
 
+query-paper-with-history:
+    curl -X POST "http://0.0.0.0:8000/prod/query" \
+        -H "Content-Type: application/json" \
+        -d "{\"query\": \"What did we talk about in our chat history?\", \"session_id\": \"123\", \"chat_history\": [{\"role\": \"user\", \"content\": \"What color is the sky ?\"}, {\"role\": \"assistant\", \"content\": \"the sky is blue.\"}]}"
+
 # Start the FastAPI server with correct PYTHONPATH
 serve:
     PYTHONPATH=. poetry run python routers/router.py
