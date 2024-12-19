@@ -8,7 +8,7 @@ from brain.document_processing import chunk_docs, load_pdf
 from brain.model_router import create_router
 from brain.rag import create_rag_chain
 from brain.summariser import create_summary_chain
-from brain.vector_db import create_db, create_retriever
+from backend.repositories.vector_db import create_db, create_retriever
 
 dotenv.load_dotenv()
 

@@ -2,7 +2,7 @@ from typing import Optional
 
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
-from brain.vector_db import VectorDBFactory
+from repositories.vector_db import VectorDBFactory
 from repositories.session_db import InMemorySessionStateDB
 from services.pdf_chat_service import PDFChatService
 

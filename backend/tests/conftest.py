@@ -1,10 +1,7 @@
 from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
-from langchain_openai import ChatOpenAI
-
-from services.pdf_chat_service import PDFChatService
+import warnings
 
 
 @pytest.fixture

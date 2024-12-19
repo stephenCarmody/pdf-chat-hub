@@ -4,6 +4,9 @@ init:
 run:
     poetry run python main.py
 
+test:
+    poetry run pytest -W ignore::DeprecationWarning .
+
 # Upload the Bitcoin whitepaper
 upload-bitcoin:
     curl -X POST "http://0.0.0.0:8000/upload" \
