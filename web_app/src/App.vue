@@ -117,7 +117,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { FileText } from 'lucide-vue-next'
 import VuePdfEmbed from 'vue-pdf-embed'
-import { uploadPDF } from '@/services/api'
+import { uploadPDF, sendQuery } from '@/services/api'
 import axios from 'axios'
 import { API_URL } from '@/services/api'
 
@@ -220,6 +220,21 @@ const resetWidth = () => {
   rightPaneWidth.value = 300 // Reset to default width
 }
 
+const formatChatHistory = (messages) => {
+  return messages
+    .filter(msg => msg.type === 'user' || msg.type === 'assistant')
+    .map((msg, index, array) => {
+      if (msg.type === 'user') {
+        return {
+          content: msg.content,
+          response: array[index + 1]?.content || ''
+        }
+      }
+      return null
+    })
+    .filter(Boolean)
+}
+
 const sendMessage = async () => {
   if (!newMessage.value.trim() || !selectedPdf.value) return
   
@@ -232,14 +247,12 @@ const sendMessage = async () => {
   isLoading.value = true
   
   try {
-    const response = await axios.post(`${API_URL}/query`, {
-      query: userMessage.content,
-      session_id: sessionId.value
-    })
+    const chatHistory = formatChatHistory(messages.value)
+    const response = await sendQuery(userMessage.content, sessionId.value, chatHistory)
     
     messages.value.push({
       type: 'assistant',
-      content: response.data.message
+      content: response.message
     })
   } catch (error) {
     console.error('Query failed:', error)

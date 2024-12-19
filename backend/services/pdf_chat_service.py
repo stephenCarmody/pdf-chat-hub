@@ -68,8 +68,13 @@ class PDFChatService:
         """
         Upload a PDF file to the service. Creates new session state.
         """
+        logger.info(f"Starting upload process for session_id: {session_id}")
+        logger.info(f"File path received: {file_path}")
+        
         try:
             pages = load_pdf(file_path)
+            logger.info(f"Successfully loaded PDF with {len(pages)} pages")
+            
             docs = chunk_docs(pages)
 
             # Save only the document content and metadata
@@ -92,6 +97,8 @@ class PDFChatService:
             }
 
             self.session_state_db.put(session_id, state)
+            logger.info("Successfully saved state to database")
 
         except Exception as e:
+            logger.error(f"Upload failed: {str(e)}", exc_info=True)
             raise Exception(f"Failed to process PDF: {str(e)}")

@@ -1,10 +1,14 @@
 ECR_URL := "031421732210.dkr.ecr.eu-west-1.amazonaws.com"
 
+clean:
+    # remove all pycache
+    find . -type d -name "__pycache__" -exec rm -rf {} +
+
 serve-frontend-local:
     cd web_app && npm run dev
 
 serve-backend-local:
-    cd backend && uvicorn routers.router:app --reload
+    cd backend && uvicorn app:app --reload --log-level debug
 
 build-and-sync-frontend:
     cd web_app && just build
