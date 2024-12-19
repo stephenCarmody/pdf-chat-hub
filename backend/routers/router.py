@@ -61,7 +61,4 @@ async def upload_file(
         return {"message": "File uploaded successfully!", "filename": file.filename}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to process PDF: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Failed to process PDF: {str(e)}")
