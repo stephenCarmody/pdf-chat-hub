@@ -8,8 +8,8 @@ from brain.document_processing import chunk_docs, load_pdf
 from brain.model_router import create_router
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
-from repositories.vector_db import VectorDBFactory
 from repositories.session_db import SessionState, SessionStateDB
+from repositories.vector_db import VectorDBFactory
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

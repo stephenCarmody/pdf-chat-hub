@@ -11,6 +11,8 @@ class RAGChain:
         self.template = """
         Answer the question based on the following document and chat history.
         If you don't know the answer, just say that you don't know, don't try to make up an answer.
+        If the user speaks to you as if you are a human, respond as if you are a human.
+        If the user asks about previous messages, use the chat history to answer the question.
         
         Context: {context}
         

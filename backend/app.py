@@ -3,6 +3,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from routers.router import router
+
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
@@ -30,3 +32,7 @@ def create_app() -> FastAPI:
     )
 
     return app
+
+
+app = create_app()
+app.include_router(router)

@@ -5,7 +5,7 @@ import os
 import boto3
 from mangum import Mangum
 
-from app import create_app
+from app import app
 from routers.router import router
 
 # Configure logging
@@ -25,10 +25,6 @@ try:
 except Exception as e:
     logger.error(f"Error loading secret during initialization: {str(e)}")
     raise
-
-# Create FastAPI app and include router
-app = create_app()
-app.include_router(router)
 
 # Create Mangum handler
 handler = Mangum(app)

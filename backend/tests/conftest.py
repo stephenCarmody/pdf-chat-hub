@@ -1,7 +1,7 @@
+import warnings
 from pathlib import Path
 
 import pytest
-import warnings
 
 
 @pytest.fixture

@@ -7,23 +7,31 @@ run:
 test:
     poetry run pytest -W ignore::DeprecationWarning .
 
+clean:
+    rm -rf .pytest_cache 
+    find . -type d -name "__pycache__" -exec rm -rf {} +
+
+serve-local:
+    poetry run python -m debug
+
 # Upload the Bitcoin whitepaper
 upload-bitcoin:
-    curl -X POST "http://0.0.0.0:8000/upload" \
+    curl -X POST "http://0.0.0.0:8000/prod/upload" \
         -H "Content-Type: multipart/form-data" \
-        -F "file=@docs/Bitcoin - A Peer-to-Peer Electronic Cash System.pdf"
+        -F "file=@docs/Bitcoin - A Peer-to-Peer Electronic Cash System.pdf" \
+        -F "session_id=123"
 
 # Query the API with a custom message
 query message:
-    curl -X POST "http://0.0.0.0:8000/query" \
+    curl -X POST "http://0.0.0.0:8000/prod/query" \
         -H "Content-Type: application/json" \
-        -d "{\"query\": \"{{message}}\"}"
+        -d "{\"query\": \"{{message}}\", \"session_id\": \"123\", \"chat_history\": []}"
 
 # Example quick query about the paper
 query-paper:
-    curl -X POST "http://0.0.0.0:8000/query" \
+    curl -X POST "http://0.0.0.0:8000/prod/query" \
         -H "Content-Type: application/json" \
-        -d "{\"query\": \"What is this paper about?\"}"
+        -d "{\"query\": \"What is this paper about?\", \"session_id\": \"123\", \"chat_history\": []}"
 
 # Start the FastAPI server with correct PYTHONPATH
 serve:

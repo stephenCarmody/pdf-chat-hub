@@ -1,12 +1,15 @@
+import logging
 import uuid
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from dependencies.services import get_pdf_service
 from models.api_models import AppInfo, QueryRequest
 from services.pdf_chat_service import PDFChatService
+
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path("/tmp/pdf_chat_uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -33,6 +36,7 @@ async def query(
     request: QueryRequest,
     pdf_service: Annotated[PDFChatService, Depends(get_pdf_service)],
 ):
+    logger.info(f"Querying for session {request.session_id}")
     try:
         result = pdf_service.query(
             query=request.query,
@@ -41,6 +45,7 @@ async def query(
         )
         return {"message": result}
     except Exception as e:
+        logger.error(f"Query failed: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -48,8 +53,9 @@ async def query(
 async def upload_file(
     pdf_service: Annotated[PDFChatService, Depends(get_pdf_service)],
     file: UploadFile = File(...),
-    session_id: str = None,
+    session_id: str = Form(...),
 ):
+    logger.info(f"Uploading file for session {session_id}")
     try:
         file_path = UPLOAD_DIR / file.filename
         contents = await file.read()
@@ -61,4 +67,5 @@ async def upload_file(
         return {"message": "File uploaded successfully!", "filename": file.filename}
 
     except Exception as e:
+        logger.error(f"Upload failed: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Failed to process PDF: {str(e)}")

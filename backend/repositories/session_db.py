@@ -1,7 +1,9 @@
+import json
 import logging
 import os
 import pickle
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, List, Optional, TypedDict
 
 import boto3
@@ -72,3 +74,28 @@ class S3SessionStateDB(SessionStateDB):
 
     def _get_key(self, session_id: str) -> str:
         return f"chat_states/{session_id}/state.pkl"
+
+
+class FileSystemSessionStateDB(SessionStateDB):
+    def __init__(self, storage_dir: str = "/tmp/pdf_chat_sessions"):
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Using file system session state database at {self.storage_dir}")
+
+    def put(self, session_id: str, state: SessionState) -> None:
+        file_path = self.storage_dir / f"{session_id}.json"
+        logger.info(f"Saving state to {file_path}")
+        with open(file_path, "w") as f:
+            json.dump(state, f)
+        logger.info(f"Successfully saved state for session {session_id}")
+
+    def get(self, session_id: str) -> Optional[SessionState]:
+        file_path = self.storage_dir / f"{session_id}.json"
+        logger.info(f"Trying to load state from {file_path}")
+        if not file_path.exists():
+            logger.warning(f"No state file found for session {session_id}")
+            return None
+        with open(file_path, "r") as f:
+            state = json.load(f)
+            logger.info(f"Loaded state.")
+            return state
