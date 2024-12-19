@@ -24,6 +24,8 @@ boto3 = "^1.35.80"
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
 black = "^24.10.0"
+pytest = "^8.3.4"
+pytest-mock = "^3.14.0"
 
 [build-system]
 requires = ["poetry-core"]

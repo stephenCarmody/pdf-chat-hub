@@ -1,15 +1,27 @@
+from abc import ABC, abstractmethod
+
+from langchain.schema import Document
+from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 
 
-def create_db(docs: list) -> FAISS:
-    """Create a FAISS database from a list of documents."""
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-    db = FAISS.from_documents(docs, embeddings)
-    return db
+class VectorDBFactory(ABC):
+    @abstractmethod
+    def create_db(self, docs: list[Document], k: int = 3) -> FAISS:
+        """Create a vector database from documents and return it as a retriever."""
+        pass
 
 
-def create_retriever(db: FAISS) -> FAISS:
-    """Create a retriever from a FAISS database."""
-    retriever = db.as_retriever(search_kwargs={"k": 3})
-    return retriever
+class OpenAIVectorDBFactory(VectorDBFactory):
+    def create_db(self, docs: list[Document], k: int = 3) -> FAISS:
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+        db = FAISS.from_documents(docs, embeddings)
+        return db.as_retriever(search_kwargs={"k": k})
+
+
+class FakeVectorDBFactory(VectorDBFactory):
+    def create_db(self, docs: list[Document], k: int = 3) -> FAISS:
+        embeddings = FakeEmbeddings(size=1536)
+        db = FAISS.from_documents(docs, embeddings)
+        return db.as_retriever(search_kwargs={"k": k})

@@ -3,11 +3,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 
-def create_summary_chain():
+class SummaryChain:
+    def __init__(self):
+        prompt = ChatPromptTemplate.from_template("Summarize this content: {context}")
+        # Define LLM chain
+        llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
+        self.chain = create_stuff_documents_chain(llm, prompt)
 
-    prompt = ChatPromptTemplate.from_template("Summarize this content: {context}")
-    # Define LLM chain
-    llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
-    summary_chain = create_stuff_documents_chain(llm, prompt)
-
-    return summary_chain
+    def run(self, context: str):
+        return self.chain.invoke({"context": context})
