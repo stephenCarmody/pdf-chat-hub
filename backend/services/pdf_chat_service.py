@@ -1,6 +1,7 @@
 import logging
 from io import BytesIO
-from typing import List, Optional
+from typing import List, Optional, Dict
+import uuid
 
 from langchain.schema import Document
 
@@ -31,13 +32,13 @@ class PDFChatService:
         self.router = create_router()
 
     def query(
-        self, query: str, session_id: str, chat_history: Optional[List[str]] = None
+        self, query: str, session_id: str, doc_id: str, chat_history: Optional[List[str]] = None
     ):
         """
-        Query the document with a question / task.
+        Query the document with a question/task.
         """
-        logger.info(f"Querying with query: {query}, session_id: {session_id}, chat_history: {chat_history}")
-        state = self.session_state_db.get(session_id)
+        logger.info(f"Querying with query: {query}, session_id: {session_id}, doc_id: {doc_id}")
+        state = self.session_state_db.get(f"{session_id}:{doc_id}")
         if not state:
             return "Please upload a document first."
 
@@ -65,18 +66,19 @@ class PDFChatService:
         except Exception as e:
             raise Exception(f"Failed to process query: {str(e)}")
 
-    def upload(self, file_path: str, session_id: str) -> None:
+    def upload(self, file_path: str, session_id: str) -> dict:
         """
         Upload a PDF file to the service. Creates new session state.
+        Returns document ID and filename.
         """
         logger.info(f"Starting upload process for session_id: {session_id}")
-        logger.info(f"File path received: {file_path}")
         
         try:
             pages = load_pdf(file_path)
             logger.info(f"Successfully loaded PDF with {len(pages)} pages")
             
             docs = chunk_docs(pages)
+            doc_id = str(uuid.uuid4())
 
             # Save only the document content and metadata
             serializable_pages = [
@@ -97,8 +99,14 @@ class PDFChatService:
                 ],
             }
 
-            self.session_state_db.put(session_id, state)
+            # Store with combined session_id and doc_id as key
+            self.session_state_db.put(f"{session_id}:{doc_id}", state)
             logger.info("Successfully saved state to database")
+
+            return {
+                "doc_id": doc_id,
+                "message": "File uploaded successfully!"
+            }
 
         except Exception as e:
             logger.error(f"Upload failed: {str(e)}", exc_info=True)

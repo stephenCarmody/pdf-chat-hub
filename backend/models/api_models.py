@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import List, Dict, Optional
 
 
 class Message(BaseModel):
@@ -9,9 +10,10 @@ class Message(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    query: str = Field(description="The query to be sent to the PDF chat service")
-    session_id: str | None = None
-    chat_history: list[Message] = []
+    query: str
+    session_id: str
+    doc_id: str
+    chat_history: Optional[List[Dict[str, str]]] = None
 
 
 class AppInfo(BaseModel):

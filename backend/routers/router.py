@@ -41,6 +41,7 @@ async def query(
         result = pdf_service.query(
             query=request.query,
             session_id=request.session_id,
+            doc_id=request.doc_id,
             chat_history=request.chat_history,
         )
         return {"message": result}
@@ -63,8 +64,12 @@ async def upload_file(
         with open(file_path, "wb") as f:
             f.write(contents)
 
-        pdf_service.upload(str(file_path), session_id)
-        return {"message": "File uploaded successfully!", "filename": file.filename}
+        result = pdf_service.upload(str(file_path), session_id)
+        return {
+            "doc_id": result["doc_id"],
+            "message": result["message"],
+            "filename": file.filename
+        }
 
     except Exception as e:
         logger.exception("Upload failed with error:")

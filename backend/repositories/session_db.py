@@ -4,7 +4,7 @@ import os
 import pickle
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict, Any, Tuple
 
 import boto3
 from botocore.exceptions import ClientError
@@ -18,9 +18,10 @@ class DocumentState(TypedDict):
 
 
 class SessionState(TypedDict):
-    pages: List[DocumentState]
+    pages: List[Dict[str, Any]]
     full_text: str
-    docs: List[DocumentState]
+    docs: List[Dict[str, Any]]
+    chat_history: List[Tuple[str, str]]  # List of (query, response) pairs
 
 
 class SessionStateDB(ABC):
