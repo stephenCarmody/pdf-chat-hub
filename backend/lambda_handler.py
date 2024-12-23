@@ -16,6 +16,7 @@ logger.setLevel(logging.INFO)
 secrets_client = boto3.client("secretsmanager")
 
 # Get the secret during cold start
+# TODO: See if this can be handled in a more elegant way, is there a better way to load secrets using lmbda 
 try:
     secret_name = os.environ["OPENAI_SECRET_NAME"]
     response = secrets_client.get_secret_value(SecretId=secret_name)

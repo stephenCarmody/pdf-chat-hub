@@ -7,7 +7,7 @@ from langchain_community.llms import FakeListLLM
 
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
-from repositories.session_db import InMemorySessionStateDB
+from repositories.session_db import InMemorySessionStateDB, FileSystemSessionStateDB
 from repositories.vector_db import FakeVectorDBFactory
 from services.pdf_chat_service import PDFChatService
 

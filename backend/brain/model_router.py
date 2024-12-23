@@ -14,6 +14,7 @@ class RouteQuery(BaseModel):
     )
 
 
+# TODO: Could this be a class or would it be overkill ? 
 def create_router():
     """Create a router that directs user queries to appropriate actions.
 

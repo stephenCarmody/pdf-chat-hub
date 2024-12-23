@@ -56,4 +56,3 @@ def create_app() -> FastAPI:
 
 app = create_app()
 app.include_router(router)
-

@@ -47,10 +47,11 @@ class PDFChatService:
                 for doc in state["docs"]
             ]
 
+            #TODO: Refactor this once we have a proper vectorDB 
             vector_db = self.vector_db_factory.create_db(docs)
             result = self.router.invoke(query)
 
-            # Implement strategy pattern
+            #TODO: Implement strategy pattern here
             if result.task.lower() == "q_and_a":
                 result = self.rag_chain.run(query, vector_db, chat_history or [])
             elif result.task.lower() == "summary":

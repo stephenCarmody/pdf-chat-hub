@@ -24,7 +24,11 @@ resource "aws_apigatewayv2_api" "api" {
   name          = "pdf-chat-api"
   protocol_type = "HTTP"
   cors_configuration {
-    allow_origins = ["https://dt6q0e1osg5xr.cloudfront.net"]
+    allow_origins = [
+      "https://dt6q0e1osg5xr.cloudfront.net",
+      "https://www.pdfchathub.com",
+      "http://localhost:5173" 
+    ]
     allow_methods = ["POST", "GET", "OPTIONS"]
     allow_headers = ["*"]
     max_age       = 300

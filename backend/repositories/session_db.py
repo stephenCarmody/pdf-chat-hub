@@ -76,6 +76,7 @@ class S3SessionStateDB(SessionStateDB):
         return f"chat_states/{session_id}/state.pkl"
 
 
+# TODO: Figure out where folder is on system -> Implement some cleanup for tests
 class FileSystemSessionStateDB(SessionStateDB):
     def __init__(self, storage_dir: str = "/tmp/pdf_chat_sessions"):
         self.storage_dir = Path(storage_dir)

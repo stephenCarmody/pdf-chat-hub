@@ -1,3 +1,0 @@
-TEST_FILE: "Bitcoin - A Peer-to-Peer Electronic Cash System.pdf"
-DOCS_DIR: "docs"
-SESSION_STATE_BUCKET: "pdf-chat-lambda-state"
