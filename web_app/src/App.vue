@@ -27,7 +27,7 @@
           @click="selectPdf(pdf)"
         >
           <FileText class="icon" />
-          <span class="pdf-name">{{ pdf.name }}</span>
+          <span class="pdf-name text-truncate">{{ pdf.name }}</span>
         </div>
       </div>
     </div>
@@ -82,7 +82,7 @@
       <div v-else class="chat-interface">
         <div class="messages" ref="chatContainerRef">
           <div 
-            v-for="(message, index) in messages" 
+            v-for="(message, index) in messages[selectedPdf?.id] || []" 
             :key="index"
             :class="['message', message.type]"
           >
@@ -128,7 +128,7 @@ const isResizing = ref(false)
 const startX = ref(0)
 const startWidth = ref(0)
 const pdfContainerRef = ref(null)
-const messages = ref([])
+const messages = ref({})  // {docId: [...messages]}
 const newMessage = ref('')
 const chatContainerRef = ref(null)
 const isLoading = ref(false)
@@ -156,37 +156,32 @@ onMounted(async () => {
 const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (file && file.type === 'application/pdf') {
-    if (!sessionId.value) {
-      console.error('Session ID is not available.')
-      messages.value.push({
-        type: 'error',
-        content: 'Session ID is not available. Please try again later.'
-      })
-      return
-    }
-    isUploading.value = true // Start loading
+    isUploading.value = true
     try {
-      console.log('Uploading PDF with session ID:', sessionId.value)
-      const response = await uploadPDF(file, sessionId.value) // Pass sessionId.value
+      const response = await uploadPDF(file, sessionId.value)
       const newPdf = {
-        id: Date.now(),
+        id: response.doc_id,
         name: file.name,
         file: file,
         url: URL.createObjectURL(file)
       }
       uploadedPdfs.value.push(newPdf)
+      messages.value[newPdf.id] = []  // Initialize empty chat history
       selectPdf(newPdf)
-      console.log('Upload successful:', response.message)
     } catch (error) {
       console.error('Upload failed:', error)
     } finally {
-      isUploading.value = false // Stop loading
+      isUploading.value = false
     }
   }
 }
 
 const selectPdf = (pdf) => {
   selectedPdf.value = pdf
+  // Initialize chat history for this document if it doesn't exist
+  if (!messages.value[pdf.id]) {
+    messages.value[pdf.id] = []
+  }
 }
 
 // Resizing functionality
@@ -242,21 +237,27 @@ const sendMessage = async () => {
     type: 'user',
     content: newMessage.value
   }
-  messages.value.push(userMessage)
+  
+  const currentDocId = selectedPdf.value.id
+  messages.value[currentDocId].push(userMessage)
   newMessage.value = ''
   isLoading.value = true
   
   try {
-    const chatHistory = formatChatHistory(messages.value)
-    const response = await sendQuery(userMessage.content, sessionId.value, chatHistory)
+    const chatHistory = messages.value[currentDocId]
+    const response = await sendQuery(
+      userMessage.content, 
+      sessionId.value,
+      currentDocId,
+      chatHistory
+    )
     
-    messages.value.push({
+    messages.value[currentDocId].push({
       type: 'assistant',
       content: response.message
     })
   } catch (error) {
-    console.error('Query failed:', error)
-    messages.value.push({
+    messages.value[currentDocId].push({
       type: 'error',
       content: 'Failed to get response. Please try again.'
     })
@@ -358,10 +359,9 @@ html, body {
 .pdf-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
 }
 
 .pdf-item:hover {
@@ -369,9 +369,11 @@ html, body {
 }
 
 .pdf-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .pdf-viewer {
@@ -423,8 +425,9 @@ html, body {
 }
 
 .icon {
-  width: 20px;
-  height: 20px;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
 }
 
 .pdf-view {

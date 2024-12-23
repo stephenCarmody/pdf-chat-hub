@@ -21,11 +21,12 @@ export const uploadPDF = async (file, sessionId) => {
   }
 }
 
-export const sendQuery = async (query, sessionId, chatHistory) => {
+export const sendQuery = async (query, sessionId, docId, chatHistory) => {
   try {
     const response = await axios.post(`${API_URL}/query`, {
       query: query,
       session_id: sessionId,
+      doc_id: docId,
       chat_history: chatHistory.map(msg => ({
         role: msg.type === 'user' ? 'user' : 'assistant', 
         content: msg.content
