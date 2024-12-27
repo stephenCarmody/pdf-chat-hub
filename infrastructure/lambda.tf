@@ -1,11 +1,22 @@
+variable "lambda_image_tag" {
+  description = "The tag of the lambda image to deploy"
+  type        = string
+  default     = "latest"
+}
+
 resource "aws_lambda_function" "api" {
   function_name = "pdf-chat-api"
   role         = aws_iam_role.lambda_role.arn
   package_type = "Image"
-  image_uri    = "${aws_ecr_repository.lambda_ecr.repository_url}:latest"
-  timeout      = 60
-  memory_size  = 512
+  image_uri    = "${var.ecr_repository_url}:${var.lambda_image_tag}"
+  timeout      = 30
+  memory_size  = 256
   source_code_hash = timestamp()
+  publish = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   environment {
     variables = {

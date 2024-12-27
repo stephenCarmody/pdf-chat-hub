@@ -1,5 +1,7 @@
 ECR_URL := "031421732210.dkr.ecr.eu-west-1.amazonaws.com"
 
+VERSION := `git rev-parse --short HEAD`
+
 clean:
     # remove all pycache
     find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -18,15 +20,16 @@ get-frontend-url:
     cd infrastructure && terraform output cloudfront_domain
 
 lambda-build:
-    cd backend && docker build --platform linux/x86_64 -t pdf-chat-api .
+    cd backend && docker build --platform linux/x86_64 -t {{ECR_URL}}/pdf-chat-api:{{VERSION}} .
 
-lambda-push:
+lambda-push: lambda-build
     aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin {{ECR_URL}}
-    docker tag pdf-chat-api:latest {{ECR_URL}}/pdf-chat-api:latest
-    docker push {{ECR_URL}}/pdf-chat-api:latest
+    docker push {{ECR_URL}}/pdf-chat-api:{{VERSION}}
 
 lambda-deploy:
-    cd infrastructure && terraform apply -replace="aws_lambda_function.api" \
+    cd infrastructure && terraform apply \
+        -replace="aws_lambda_function.api" \
+        -target="aws_lambda_function.api" \
         -target="aws_lambda_permission.api_gateway" \
         -target="aws_lambda_permission.api_gateway_root"
 
@@ -46,6 +49,10 @@ lambda-run-local:
 lambda-endpoint:
     cd infrastructure && terraform output api_gateway_url
 
+lambda-logs:
+    aws logs tail /aws/lambda/pdf-chat-api --follow
+
+# SECRETS
 
 secrets-put:
     #!/usr/bin/env bash
@@ -54,6 +61,8 @@ secrets-put:
         --secret-id pdf-chat/openai-api-key \
         --secret-string "{\"OPENAI_API_KEY\":\"$API_KEY\"}" \
         --region eu-west-1
+
+# TESTING
 
 test-local-root:
     curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @test_payloads/root-request.json | jq
@@ -67,11 +76,20 @@ test-lambda-root:
 test-lambda-query:
     curl -X POST https://li6a6mcfp4.execute-api.eu-west-1.amazonaws.com/prod/query \
         -H "Content-Type: application/json" \
-        -d '{"query":"What is this document about?"}'
+        -d '{"query":"What is this document about?", "session_id": "test-session"}'
 
 test-lambda-upload:
     #!/usr/bin/env bash
     API_URL=$(just lambda-endpoint | tr -d '"\n') && \
     curl -X POST "${API_URL}/prod/upload" \
         -H "Content-Type: multipart/form-data" \
-        -F file=@"backend/docs/Bitcoin - A Peer-to-Peer Electronic Cash System.pdf"
+        -F "file=@backend/docs/Bitcoin - A Peer-to-Peer Electronic Cash System.pdf" \
+        -F "session_id=test-session"
+
+lambda-deploy-ci: lambda-test lambda-push
+    cd infrastructure && terraform init
+    cd infrastructure && terraform apply -auto-approve \
+        -var="lambda_image_tag={{VERSION}}" \
+        -target="aws_lambda_function.api" \
+        -target="aws_lambda_permission.api_gateway" \
+        -target="aws_lambda_permission.api_gateway_root"
