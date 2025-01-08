@@ -76,7 +76,7 @@ test-lambda-root:
 test-lambda-query:
     curl -X POST https://li6a6mcfp4.execute-api.eu-west-1.amazonaws.com/prod/query \
         -H "Content-Type: application/json" \
-        -d '{"query":"What is this document about?", "session_id": "test-session"}'
+        -d '{"query":"What is this document about?", "session_id": "test-session", "doc_id": "835967f1-df45-4804-bf1f-8a647605f34c"}'
 
 test-lambda-upload:
     #!/usr/bin/env bash
@@ -86,10 +86,11 @@ test-lambda-upload:
         -F "file=@backend/docs/Bitcoin - A Peer-to-Peer Electronic Cash System.pdf" \
         -F "session_id=test-session"
 
-lambda-deploy-ci: lambda-test lambda-push
+lambda-deploy-ci: lambda-build lambda-push
     cd infrastructure && terraform init
     cd infrastructure && terraform apply -auto-approve \
         -var="lambda_image_tag={{VERSION}}" \
+        -var="ecr_repository_url={{ECR_URL}}" \
         -target="aws_lambda_function.api" \
         -target="aws_lambda_permission.api_gateway" \
         -target="aws_lambda_permission.api_gateway_root"

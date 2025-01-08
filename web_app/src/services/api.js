@@ -21,19 +21,29 @@ export const uploadPDF = async (file, sessionId) => {
   }
 }
 
-export const sendQuery = async (query, sessionId, docId, chatHistory) => {
+export const sendQuery = async (query, sessionId, docId, chatHistory = []) => {
+  const payload = {
+    query: query,
+    session_id: sessionId,
+    doc_id: docId,
+    chat_history: (chatHistory || []).map(msg => ({
+      role: msg.type || 'user',
+      content: msg.content
+    })).filter(msg => msg.content && msg.role)
+  }
+
+  console.log('Sending payload:', JSON.stringify(payload, null, 2))
+
   try {
-    const response = await axios.post(`${API_URL}/query`, {
-      query: query,
-      session_id: sessionId,
-      doc_id: docId,
-      chat_history: chatHistory.map(msg => ({
-        role: msg.type === 'user' ? 'user' : 'assistant', 
-        content: msg.content
-      }))
-    })
+    const response = await axios.post(`${API_URL}/query`, payload)
     return response.data
   } catch (error) {
+    console.error('Error details:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      sentPayload: payload
+    })
     throw error
   }
 }

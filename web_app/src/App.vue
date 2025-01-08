@@ -244,12 +244,17 @@ const sendMessage = async () => {
   isLoading.value = true
   
   try {
-    const chatHistory = messages.value[currentDocId]
+    // Format chat history before sending
+    const formattedHistory = messages.value[currentDocId].map(msg => ({
+      role: msg.type,  // This maps 'user' and 'assistant' types to roles
+      content: msg.content
+    }))
+
     const response = await sendQuery(
       userMessage.content, 
       sessionId.value,
       currentDocId,
-      chatHistory
+      formattedHistory
     )
     
     messages.value[currentDocId].push({

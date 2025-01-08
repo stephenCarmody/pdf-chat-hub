@@ -37,6 +37,9 @@ async def query(
     pdf_service: Annotated[PDFChatService, Depends(get_pdf_service)],
 ):
     logger.info(f"Querying for session {request.session_id}")
+    logger.info(f"Query: {request.query}")
+    logger.info(f"Doc ID: {request.doc_id}")
+    logger.info(f"Chat history: {request.chat_history}")
     try:
         result = pdf_service.query(
             query=request.query,

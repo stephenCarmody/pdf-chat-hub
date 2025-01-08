@@ -8,9 +8,9 @@ resource "aws_lambda_function" "api" {
   function_name = "pdf-chat-api"
   role         = aws_iam_role.lambda_role.arn
   package_type = "Image"
-  image_uri    = "${var.ecr_repository_url}:${var.lambda_image_tag}"
-  timeout      = 30
-  memory_size  = 256
+  image_uri    = "${var.ecr_repository_url}/pdf-chat-api:${var.lambda_image_tag}"
+  timeout      = 60
+  memory_size  = 512
   source_code_hash = timestamp()
   publish = true
 

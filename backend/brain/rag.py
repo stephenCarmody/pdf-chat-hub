@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
@@ -40,13 +40,17 @@ class RAGChain:
         )
         return chain.invoke({"question": query, "chat_history": chat_history})
 
-    def _format_chat_history(self, chat_history: List[Tuple[str, str]]) -> str:
+    def _format_chat_history(self, chat_history: List[Dict[str, str]]) -> str:
         """Format chat history into a string."""
         if not chat_history:
             return "No previous conversation."
-        return "\n".join(
-            [f"Human: {human}\nAssistant: {ai}" for human, ai in chat_history]
-        )
+        
+        formatted_messages = []
+        for msg in chat_history:
+            prefix = "Human" if msg.role == "user" else "Assistant"
+            formatted_messages.append(f"{prefix}: {msg.content}")
+        
+        return "\n".join(formatted_messages)
 
     def _combine_documents(self, docs):
         """Combine multiple documents into a single string."""
