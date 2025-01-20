@@ -1,0 +1,6 @@
+lint-check:
+    tflint
+
+lint-fix:
+    tflint --fix
+
