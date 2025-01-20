@@ -3,26 +3,29 @@
     <!-- Left Sidebar -->
     <div class="sidebar" :style="{ width: '250px' }">
       <div class="upload-button">
-        <label class="upload-label" :class="{ 'opacity-50 cursor-not-allowed': isUploading }">
+        <label
+          class="upload-label"
+          :class="{ 'opacity-50 cursor-not-allowed': isUploading }"
+        >
           <FileText class="icon" />
           <span>Upload PDF</span>
-          <input 
-            type="file" 
-            accept=".pdf" 
-            class="hidden-input" 
+          <input
+            type="file"
+            accept=".pdf"
+            class="hidden-input"
             @change="handleFileUpload"
             :disabled="isUploading"
-          >
+          />
         </label>
       </div>
-      
+
       <div class="pdf-list">
         <div v-if="uploadedPdfs.length === 0" class="no-pdfs">
           No PDFs uploaded yet
         </div>
-        <div 
-          v-for="pdf in uploadedPdfs" 
-          :key="pdf.id" 
+        <div
+          v-for="pdf in uploadedPdfs"
+          :key="pdf.id"
           class="pdf-item"
           @click="selectPdf(pdf)"
         >
@@ -33,13 +36,18 @@
     </div>
 
     <!-- Middle PDF Viewer -->
-    <div 
-      class="pdf-viewer" 
+    <div
+      class="pdf-viewer"
       ref="pdfContainerRef"
       :style="{ width: `calc(100% - 550px + ${rightPaneWidth}px)` }"
     >
       <div v-if="isUploading" class="upload-loading">
-        <svg class="animate-spin spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg
+          class="animate-spin spinner"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
           <circle
             class="opacity-25"
             cx="12"
@@ -68,11 +76,7 @@
     </div>
 
     <!-- Resizer -->
-    <div 
-      class="resizer"
-      @mousedown="startResize"
-      @dblclick="resetWidth"
-    ></div>
+    <div class="resizer" @mousedown="startResize" @dblclick="resetWidth"></div>
 
     <!-- Right Chat Panel -->
     <div class="chat-panel" :style="{ width: `${rightPaneWidth}px` }">
@@ -81,12 +85,12 @@
       </div>
       <div v-else class="chat-interface">
         <div class="messages" ref="chatContainerRef">
-          <div 
-            v-for="(message, index) in messages[selectedPdf?.id] || []" 
+          <div
+            v-for="(message, index) in messages[selectedPdf?.id] || []"
             :key="index"
             :class="['message', message.type]"
           >
-            <div 
+            <div
               class="message-content"
               v-html="formatMessage(message.content)"
             ></div>
@@ -128,7 +132,7 @@ const isResizing = ref(false)
 const startX = ref(0)
 const startWidth = ref(0)
 const pdfContainerRef = ref(null)
-const messages = ref({})  // {docId: [...messages]}
+const messages = ref({}) // {docId: [...messages]}
 const newMessage = ref('')
 const chatContainerRef = ref(null)
 const isLoading = ref(false)
@@ -166,7 +170,7 @@ const handleFileUpload = async (event) => {
         url: URL.createObjectURL(file)
       }
       uploadedPdfs.value.push(newPdf)
-      messages.value[newPdf.id] = []  // Initialize empty chat history
+      messages.value[newPdf.id] = [] // Initialize empty chat history
       selectPdf(newPdf)
     } catch (error) {
       console.error('Upload failed:', error)
@@ -197,7 +201,7 @@ const startResize = (event) => {
 
 const handleMouseMove = (event) => {
   if (!isResizing.value) return
-  
+
   const diff = startX.value - event.clientX
   const newWidth = Math.min(Math.max(startWidth.value + diff, 200), 600)
   rightPaneWidth.value = newWidth
@@ -215,77 +219,65 @@ const resetWidth = () => {
   rightPaneWidth.value = 300 // Reset to default width
 }
 
-const formatChatHistory = (messages) => {
-  return messages
-    .filter(msg => msg.type === 'user' || msg.type === 'assistant')
-    .map((msg, index, array) => {
-      if (msg.type === 'user') {
-        return {
-          content: msg.content,
-          response: array[index + 1]?.content || ''
-        }
-      }
-      return null
-    })
-    .filter(Boolean)
+const formatMessage = (content) => {
+  // Replace ### with h3 headers
+  content = content.replace(/###\s(.*)/g, '<h3>$1</h3>')
+
+  // Replace ** ** with bold text
+  content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+
+  // Replace numbered lists (1., 2., etc)
+  content = content.replace(
+    /(\d+\.\s.*?)(?=(?:\d+\.|\n|$))/g,
+    '<div class="list-item">$1</div>'
+  )
+
+  // Convert line breaks to <br>
+  content = content.replace(/\n/g, '<br>')
+
+  return content
 }
 
 const sendMessage = async () => {
   if (!newMessage.value.trim() || !selectedPdf.value) return
-  
+
   const userMessage = {
     type: 'user',
     content: newMessage.value
   }
-  
+
   const currentDocId = selectedPdf.value.id
   messages.value[currentDocId].push(userMessage)
   newMessage.value = ''
   isLoading.value = true
-  
+
   try {
     // Format chat history before sending
-    const formattedHistory = messages.value[currentDocId].map(msg => ({
-      role: msg.type,  // This maps 'user' and 'assistant' types to roles
+    const formattedHistory = messages.value[currentDocId].map((msg) => ({
+      role: msg.type, // This maps 'user' and 'assistant' types to roles
       content: msg.content
     }))
 
     const response = await sendQuery(
-      userMessage.content, 
+      userMessage.content,
       sessionId.value,
       currentDocId,
       formattedHistory
     )
-    
+
     messages.value[currentDocId].push({
       type: 'assistant',
       content: response.message
     })
   } catch (error) {
+    console.error('Error in chat:', error)
     messages.value[currentDocId].push({
       type: 'error',
-      content: 'Failed to get response. Please try again.'
+      content: `Error: ${error.message || 'Failed to get response. Please try again.'}`
     })
   } finally {
     isLoading.value = false
   }
-}
-
-// Add this function to format messages
-const formatMessage = (content) => {
-  // Replace ### with h3 headers
-  content = content.replace(/###\s(.*)/g, '<h3>$1</h3>')
-  
-  // Replace ** ** with bold text
-  content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-  
-  // Replace numbered lists (1., 2., etc)
-  content = content.replace(/(\d+\.\s.*?)(?=(?:\d+\.|\n|$))/g, '<div class="list-item">$1</div>')
-  
-  // Convert line breaks to <br>
-  content = content.replace(/\n/g, '<br>')
-  
-  return content
 }
 
 onUnmounted(() => {
@@ -301,7 +293,8 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -536,11 +529,13 @@ html, body {
 }
 
 @keyframes bounce {
-  0%, 80%, 100% { 
+  0%,
+  80%,
+  100% {
     transform: scale(0);
-  } 
-  40% { 
-    transform: scale(1.0);
+  }
+  40% {
+    transform: scale(1);
   }
 }
 

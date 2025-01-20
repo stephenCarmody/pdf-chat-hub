@@ -1,0 +1,21 @@
+format:
+    npm run format
+
+lint-check:
+    npm run lint-check
+
+lint-fix:
+    npm run lint-fix
+
+test:
+    npm run test:unit
+
+serve:
+    npm run dev
+
+build:
+    npm run build
+
+sync-s3:
+    aws s3 sync dist/ s3://chat-pdf-frontend/
+
