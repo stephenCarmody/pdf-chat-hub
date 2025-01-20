@@ -19,19 +19,15 @@ build-and-sync-frontend:
 get-frontend-url:
     cd infrastructure && terraform output cloudfront_domain
 
+# Backend: Lambda
 lambda-build:
-    cd backend && docker build --platform linux/x86_64 -t {{ECR_URL}}/pdf-chat-api:{{VERSION}} .
+    just backend/docker-build-lambda
 
-lambda-push: lambda-build
-    aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin {{ECR_URL}}
-    docker push {{ECR_URL}}/pdf-chat-api:{{VERSION}}
+lambda-push: 
+    just backend/ecr-push-lambda
 
 lambda-deploy:
-    cd infrastructure && terraform apply \
-        -replace="aws_lambda_function.api" \
-        -target="aws_lambda_function.api" \
-        -target="aws_lambda_permission.api_gateway" \
-        -target="aws_lambda_permission.api_gateway_root"
+    just backend/lambda-deploy
 
 lambda-run-local:
     cd backend && docker build --platform linux/amd64 --build-arg PLATFORM=linux/arm64 -t pdf-chat-api . 
@@ -52,8 +48,8 @@ lambda-endpoint:
 lambda-logs:
     aws logs tail /aws/lambda/pdf-chat-api --follow
 
-# SECRETS
 
+# SECRETS
 secrets-put:
     #!/usr/bin/env bash
     API_KEY=$(grep OPENAI_API_KEY backend/.env | cut -d '=' -f2 | tr -d ' "')
@@ -62,8 +58,8 @@ secrets-put:
         --secret-string "{\"OPENAI_API_KEY\":\"$API_KEY\"}" \
         --region eu-west-1
 
-# TESTING
 
+# TESTING
 test-local-root:
     curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @backend/test_payloads/root-request.json | jq
 
@@ -85,12 +81,3 @@ test-lambda-upload:
         -H "Content-Type: multipart/form-data" \
         -F "file=@backend/docs/Bitcoin - A Peer-to-Peer Electronic Cash System.pdf" \
         -F "session_id=test-session"
-
-lambda-deploy-ci: lambda-build lambda-push
-    cd infrastructure && terraform init
-    cd infrastructure && terraform apply -auto-approve \
-        -var="lambda_image_tag={{VERSION}}" \
-        -var="ecr_repository_url={{ECR_URL}}" \
-        -target="aws_lambda_function.api" \
-        -target="aws_lambda_permission.api_gateway" \
-        -target="aws_lambda_permission.api_gateway_root"
