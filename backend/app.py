@@ -3,8 +3,8 @@ import logging
 # Add this at the top of app.py, before any other imports
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 
 # Ensure FastAPI's logging is also at DEBUG level
@@ -14,11 +14,11 @@ logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
 
 import os
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers.router import router
-from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

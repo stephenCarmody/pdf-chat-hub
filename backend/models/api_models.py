@@ -1,9 +1,12 @@
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
 
 
 class ChatMessage(BaseModel):
-    role: str = Field(description="The role of the message sender, either 'user' or 'assistant'")
+    role: str = Field(
+        description="The role of the message sender, either 'user' or 'assistant'"
+    )
     content: str = Field(description="The content of the message")
 
 

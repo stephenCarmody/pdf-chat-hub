@@ -4,6 +4,13 @@ init:
 run:
     poetry run python main.py
 
+lint-check:
+    poetry run isort . --check-only --diff
+    poetry run black --check --diff .
+
+lint-fix:
+    poetry run isort . && poetry run black .
+
 test:
     poetry run pytest -W ignore::DeprecationWarning .
 

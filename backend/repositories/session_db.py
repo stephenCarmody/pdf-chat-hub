@@ -4,7 +4,7 @@ import os
 import pickle
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, TypedDict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
 import boto3
 from botocore.exceptions import ClientError

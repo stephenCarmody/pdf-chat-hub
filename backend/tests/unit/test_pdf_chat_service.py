@@ -7,7 +7,7 @@ from langchain_community.llms import FakeListLLM
 
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
-from repositories.session_db import InMemorySessionStateDB, FileSystemSessionStateDB
+from repositories.session_db import InMemorySessionStateDB
 from repositories.vector_db import FakeVectorDBFactory
 from services.pdf_chat_service import PDFChatService
 
@@ -88,10 +88,10 @@ class TestPDFChatService:
         service.router = mock_router
 
         response = service.query(
-            "What is this document about?", 
+            "What is this document about?",
             session_id=session_id,
             doc_id=doc_id,
-            chat_history=[]
+            chat_history=[],
         )
         assert response is not None
         assert isinstance(response, str)
@@ -169,51 +169,51 @@ class TestPDFChatService:
     def test_multiple_documents_per_session(self, pdf_chat_service, pdf_path):
         """Test handling multiple documents within the same session."""
         session_id = "test_session"
-        
+
         # Upload first document
         upload_1_output = pdf_chat_service.upload(pdf_path, session_id)
         doc_1_id = upload_1_output["doc_id"]
-        
+
         # Upload second document (same file, different instance)
         upload_2_output = pdf_chat_service.upload(pdf_path, session_id)
         doc_2_id = upload_2_output["doc_id"]
-        
+
         # Verify different doc_ids
         assert doc_1_id != doc_2_id
-        
+
         # Create mock router response for testing
         mock_router = Mock()
         mock_router.invoke.return_value = Mock(task="q_and_a")
         pdf_chat_service.router = mock_router
-        
+
         # Query first document with chat history
         chat_history1 = []
         response1 = pdf_chat_service.query(
             "What is document 1 about?",
             session_id=session_id,
             doc_id=doc_1_id,
-            chat_history=chat_history1
+            chat_history=chat_history1,
         )
         chat_history1.append(("What is document 1 about?", response1))
-        
+
         # Follow-up query for first document
         response1_followup = pdf_chat_service.query(
             "Tell me more about document 1",
             session_id=session_id,
             doc_id=doc_1_id,
-            chat_history=chat_history1
+            chat_history=chat_history1,
         )
-        
+
         # Query second document with different chat history
         chat_history2 = []
         response2 = pdf_chat_service.query(
             "What is document 2 about?",
             session_id=session_id,
             doc_id=doc_2_id,
-            chat_history=chat_history2
+            chat_history=chat_history2,
         )
         chat_history2.append(("What is document 2 about?", response2))
-        
+
         # Verify both documents are accessible and queryable
         assert response1 == "Mock RAG response"
         assert response2 == "Mock RAG response"
@@ -221,19 +221,19 @@ class TestPDFChatService:
         # Verify states are stored separately
         state1 = pdf_chat_service.session_state_db.get(f"{session_id}:{doc_1_id}")
         state2 = pdf_chat_service.session_state_db.get(f"{session_id}:{doc_2_id}")
-        
+
         assert state1 is not None
         assert state2 is not None
-        
+
         # Verify chat histories were passed correctly
         pdf_chat_service.rag_chain.run.assert_any_call(
             "Tell me more about document 1",
             ANY,
-            [("What is document 1 about?", "Mock RAG response")]
+            [("What is document 1 about?", "Mock RAG response")],
         )
-        
+
         pdf_chat_service.rag_chain.run.assert_any_call(
             "What is document 2 about?",
             ANY,
-            []  # Should have empty history as it's the first query
+            [],  # Should have empty history as it's the first query
         )

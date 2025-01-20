@@ -33,7 +33,8 @@ jobs:
         run: poetry install --no-root
       - name: Lint
         working-directory: ./backend
-        run: make lint
+        run: just lint
       - name: Test
         working-directory: ./backend
-        run: make test
+        run: just test
+

@@ -1,7 +1,7 @@
 import logging
-from io import BytesIO
-from typing import List, Optional, Dict
 import uuid
+from io import BytesIO
+from typing import Dict, List, Optional
 
 from langchain.schema import Document
 
@@ -32,12 +32,18 @@ class PDFChatService:
         self.router = create_router()
 
     def query(
-        self, query: str, session_id: str, doc_id: str, chat_history: Optional[List[str]] = None
+        self,
+        query: str,
+        session_id: str,
+        doc_id: str,
+        chat_history: Optional[List[str]] = None,
     ):
         """
         Query the document with a question/task.
         """
-        logger.info(f"Querying with query: {query}, session_id: {session_id}, doc_id: {doc_id}")
+        logger.info(
+            f"Querying with query: {query}, session_id: {session_id}, doc_id: {doc_id}"
+        )
         state = self.session_state_db.get(f"{session_id}:{doc_id}")
         if not state:
             return "Please upload a document first."
@@ -48,11 +54,11 @@ class PDFChatService:
                 for doc in state["docs"]
             ]
 
-            #TODO: Refactor this once we have a proper vectorDB 
+            # TODO: Refactor this once we have a proper vectorDB
             vector_db = self.vector_db_factory.create_db(docs)
             result = self.router.invoke(query)
 
-            #TODO: Implement strategy pattern here
+            # TODO: Implement strategy pattern here
             if result.task.lower() == "q_and_a":
                 result = self.rag_chain.run(query, vector_db, chat_history or [])
             elif result.task.lower() == "summary":
@@ -72,11 +78,11 @@ class PDFChatService:
         Returns document ID and filename.
         """
         logger.info(f"Starting upload process for session_id: {session_id}")
-        
+
         try:
             pages = load_pdf(file_path)
             logger.info(f"Successfully loaded PDF with {len(pages)} pages")
-            
+
             docs = chunk_docs(pages)
             doc_id = str(uuid.uuid4())
 
@@ -103,10 +109,7 @@ class PDFChatService:
             self.session_state_db.put(f"{session_id}:{doc_id}", state)
             logger.info("Successfully saved state to database")
 
-            return {
-                "doc_id": doc_id,
-                "message": "File uploaded successfully!"
-            }
+            return {"doc_id": doc_id, "message": "File uploaded successfully!"}
 
         except Exception as e:
             logger.error(f"Upload failed: {str(e)}", exc_info=True)

@@ -1,13 +1,13 @@
 import json
 import logging
 import os
-import traceback
 import sys
+import traceback
 
 import boto3
-from mangum import Mangum
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
+from mangum import Mangum
 from starlette.responses import JSONResponse
 
 from app import app
@@ -17,8 +17,9 @@ from routers.router import router
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
 logger.addHandler(handler)
+
 
 # Add error handling middleware to FastAPI app
 @app.middleware("http")
@@ -32,6 +33,7 @@ async def log_requests(request: Request, call_next):
         logger.error(f"Request failed: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise
+
 
 # Initialize AWS clients outside the handler
 secrets_client = boto3.client("secretsmanager")
@@ -54,10 +56,8 @@ handler = Mangum(app, lifespan="off")
 
 logger.info("Lambda handler initialized successfully")
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.error(f"Validation error: {exc.errors()}")
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.errors()}
-    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})

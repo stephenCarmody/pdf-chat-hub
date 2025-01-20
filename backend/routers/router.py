@@ -71,7 +71,7 @@ async def upload_file(
         return {
             "doc_id": result["doc_id"],
             "message": result["message"],
-            "filename": file.filename
+            "filename": file.filename,
         }
 
     except Exception as e:
