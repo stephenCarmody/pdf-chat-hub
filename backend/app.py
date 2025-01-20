@@ -36,7 +36,8 @@ def create_app() -> FastAPI:
     )
 
     allowed_origins = [
-        "http://localhost:5173",  # Local development
+        "http://localhost:5173",  # Local development frontend
+        "http://localhost:8000",  # Local development backend
         "https://www.pdfchathub.com",  # Production custom domain
         f"https://{api_gateway_url}",  # API Gateway domain
         "https://li6a6mcfp4.execute-api.eu-west-1.amazonaws.com",  # Hardcoded API Gateway domain

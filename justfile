@@ -7,14 +7,14 @@ clean:
     find . -type d -name "__pycache__" -exec rm -rf {} +
 
 serve-frontend-local:
-    cd web_app && npm run dev
+    cd frontend && npm run dev
 
 serve-backend-local:
     cd backend && uvicorn app:app --reload --log-level debug
 
 build-and-sync-frontend:
-    cd web_app && just build
-    cd web_app && just sync-s3
+    cd frontend && just build
+    cd frontend && just sync-s3
 
 get-frontend-url:
     cd infrastructure && terraform output cloudfront_domain

@@ -1,8 +1,6 @@
 import axios from 'axios'
 
-export const API_URL = import.meta.env.PROD
-  ? `${import.meta.env.VITE_API_GATEWAY_URL}/prod` // Production API Gateway URL
-  : 'http://localhost:8000/prod' // Local development
+export const API_URL = `${import.meta.env.VITE_API_GATEWAY_URL}/prod`
 
 export const uploadPDF = async (file, sessionId) => {
   const formData = new FormData()

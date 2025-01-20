@@ -1,129 +1,43 @@
 <template>
   <div class="app-container">
     <!-- Left Sidebar -->
-    <div class="sidebar" :style="{ width: '250px' }">
-      <div class="upload-button">
-        <label
-          class="upload-label"
-          :class="{ 'opacity-50 cursor-not-allowed': isUploading }"
-        >
-          <FileText class="icon" />
-          <span>Upload PDF</span>
-          <input
-            type="file"
-            accept=".pdf"
-            class="hidden-input"
-            @change="handleFileUpload"
-            :disabled="isUploading"
-          />
-        </label>
-      </div>
-
-      <div class="pdf-list">
-        <div v-if="uploadedPdfs.length === 0" class="no-pdfs">
-          No PDFs uploaded yet
-        </div>
-        <div
-          v-for="pdf in uploadedPdfs"
-          :key="pdf.id"
-          class="pdf-item"
-          @click="selectPdf(pdf)"
-        >
-          <FileText class="icon" />
-          <span class="pdf-name text-truncate">{{ pdf.name }}</span>
-        </div>
-      </div>
-    </div>
+    <PdfSidebar
+      :uploaded-pdfs="uploadedPdfs"
+      :is-uploading="isUploading"
+      @file-upload="handleFileUpload"
+      @select-pdf="selectPdf"
+    />
 
     <!-- Middle PDF Viewer -->
-    <div
-      class="pdf-viewer"
-      ref="pdfContainerRef"
-      :style="{ width: `calc(100% - 550px + ${rightPaneWidth}px)` }"
-    >
-      <div v-if="isUploading" class="upload-loading">
-        <svg
-          class="animate-spin spinner"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8H4z"
-          ></path>
-        </svg>
-      </div>
-      <div v-else-if="!selectedPdf" class="pdf-placeholder">
-        No PDF selected
-      </div>
-      <VuePdfEmbed
-        v-else
-        :source="selectedPdf.url"
-        :width="pdfContainerRef?.clientWidth || 800"
-        :height="pdfContainerRef?.clientHeight || 1000"
-        class="pdf-view"
-      />
-    </div>
+    <PdfViewer
+      :selected-pdf="selectedPdf"
+      :is-uploading="isUploading"
+      :right-pane-width="rightPaneWidth"
+    />
 
     <!-- Resizer -->
     <div class="resizer" @mousedown="startResize" @dblclick="resetWidth"></div>
 
     <!-- Right Chat Panel -->
-    <div class="chat-panel" :style="{ width: `${rightPaneWidth}px` }">
-      <div v-if="!selectedPdf" class="chat-placeholder">
-        Select a PDF to start chatting
-      </div>
-      <div v-else class="chat-interface">
-        <div class="messages" ref="chatContainerRef">
-          <div
-            v-for="(message, index) in messages[selectedPdf?.id] || []"
-            :key="index"
-            :class="['message', message.type]"
-          >
-            <div
-              class="message-content"
-              v-html="formatMessage(message.content)"
-            ></div>
-          </div>
-          <div v-if="isLoading" class="message assistant loading">
-            <div class="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
-        <div class="input-area">
-          <input
-            v-model="newMessage"
-            @keyup.enter="sendMessage"
-            placeholder="Ask a question about the PDF..."
-            :disabled="!selectedPdf"
-          />
-          <button @click="sendMessage" :disabled="!selectedPdf">Send</button>
-        </div>
-      </div>
-    </div>
+    <ChatPanel
+      :selected-pdf="selectedPdf"
+      :messages="messages"
+      :is-loading="isLoading"
+      :right-pane-width="rightPaneWidth"
+      v-model="newMessage"
+      @send-message="sendMessage"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { FileText } from 'lucide-vue-next'
-import VuePdfEmbed from 'vue-pdf-embed'
 import { uploadPDF, sendQuery } from '@/services/api'
 import axios from 'axios'
 import { API_URL } from '@/services/api'
+import PdfSidebar from '@/components/PdfSidebar.vue'
+import ChatPanel from '@/components/ChatPanel.vue'
+import PdfViewer from '@/components/PdfViewer.vue'
 
 const uploadedPdfs = ref([])
 const selectedPdf = ref(null)
@@ -131,10 +45,8 @@ const rightPaneWidth = ref(300) // Default width
 const isResizing = ref(false)
 const startX = ref(0)
 const startWidth = ref(0)
-const pdfContainerRef = ref(null)
 const messages = ref({}) // {docId: [...messages]}
 const newMessage = ref('')
-const chatContainerRef = ref(null)
 const isLoading = ref(false)
 const sessionId = ref(null)
 const isUploading = ref(false)
@@ -182,7 +94,6 @@ const handleFileUpload = async (event) => {
 
 const selectPdf = (pdf) => {
   selectedPdf.value = pdf
-  // Initialize chat history for this document if it doesn't exist
   if (!messages.value[pdf.id]) {
     messages.value[pdf.id] = []
   }
@@ -217,25 +128,6 @@ const stopResize = () => {
 
 const resetWidth = () => {
   rightPaneWidth.value = 300 // Reset to default width
-}
-
-const formatMessage = (content) => {
-  // Replace ### with h3 headers
-  content = content.replace(/###\s(.*)/g, '<h3>$1</h3>')
-
-  // Replace ** ** with bold text
-  content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-
-  // Replace numbered lists (1., 2., etc)
-  content = content.replace(
-    /(\d+\.\s.*?)(?=(?:\d+\.|\n|$))/g,
-    '<div class="list-item">$1</div>'
-  )
-
-  // Convert line breaks to <br>
-  content = content.replace(/\n/g, '<br>')
-
-  return content
 }
 
 const sendMessage = async () => {
@@ -287,6 +179,7 @@ onUnmounted(() => {
 </script>
 
 <style>
+/* Global styles */
 * {
   margin: 0;
   padding: 0;
@@ -304,6 +197,66 @@ body {
   display: flex;
   height: 100vh;
   overflow: hidden;
+}
+
+/* Resizer styles */
+.resizer {
+  width: 4px;
+  cursor: col-resize;
+  background-color: #e5e7eb;
+  transition: background-color 0.2s;
+  margin: 0 -2px;
+  z-index: 10;
+}
+
+.resizer:hover {
+  background-color: #3b82f6;
+}
+
+/* PDF viewer styles */
+.pdf-viewer {
+  flex: 1;
+  background-color: #ffffff;
+  padding: 1rem;
+  position: relative;
+  overflow: auto;
+}
+
+.pdf-placeholder {
+  height: 100%;
+  border: 2px dashed #ccc;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-view {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+/* Loading spinner styles */
+.upload-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .sidebar {
@@ -336,18 +289,6 @@ body {
   display: none;
 }
 
-.upload-loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.spinner {
-  width: 40px; /* You might want to make it larger in this context */
-  height: 40px;
-}
-
 .pdf-list {
   display: flex;
   flex-direction: column;
@@ -374,27 +315,6 @@ body {
   text-overflow: ellipsis;
 }
 
-.pdf-viewer {
-  flex: 1;
-  background-color: #ffffff;
-  padding: 1rem;
-  position: relative;
-  overflow: auto;
-}
-
-.resizer {
-  width: 4px;
-  cursor: col-resize;
-  background-color: #e5e7eb;
-  transition: background-color 0.2s;
-  margin: 0 -2px;
-  z-index: 10;
-}
-
-.resizer:hover {
-  background-color: #3b82f6;
-}
-
 .chat-panel {
   background-color: #f3f4f6;
   padding: 1rem;
@@ -413,25 +333,10 @@ body {
   justify-content: center;
 }
 
-.pdf-placeholder {
-  height: 100%;
-  border: 2px dashed #ccc;
-  border-radius: 0.375rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .icon {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-}
-
-.pdf-view {
-  width: 100%;
-  height: 100%;
-  overflow: auto;
 }
 
 .chat-interface {
@@ -539,26 +444,6 @@ body {
   }
 }
 
-/* Spinner Styles */
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-.spinner {
-  width: 16px; /* Smaller size */
-  height: 16px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Add some spacing between messages */
 .message + .message {
   margin-top: 1rem;
 }
