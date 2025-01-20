@@ -65,10 +65,10 @@ secrets-put:
 # TESTING
 
 test-local-root:
-    curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @test_payloads/root-request.json | jq
+    curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @backend/test_payloads/root-request.json | jq
 
 test-local-query:
-    curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @test_payloads/query-request.json | jq
+    curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @backend/test_payloads/query-request.json | jq
 
 test-lambda-root:
     curl https://li6a6mcfp4.execute-api.eu-west-1.amazonaws.com/prod/
