@@ -1,8 +1,8 @@
-export AWS_ACCOUNT_ID := "031421732210"
-export AWS_REGION := "eu-west-1"
-export ECR_URL := "{{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com"
-export ECR_REPO_NAME := "pdf-chat-api"
-export VERSION := `git rev-parse --short HEAD`
+AWS_ACCOUNT_ID := "031421732210"
+AWS_REGION := "eu-west-1"
+ECR_URL := AWS_ACCOUNT_ID + ".dkr.ecr." + AWS_REGION + ".amazonaws.com"
+ECR_REPO_NAME := "pdf-chat-api"
+VERSION := `git rev-parse --short HEAD`
 
 init:
     poetry install
@@ -60,12 +60,16 @@ serve:
 ecr-login:
     aws ecr get-login-password --region {{AWS_REGION}} | docker login --username AWS --password-stdin {{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com
 
-ecr-get-latest-image:
+ecr-get-latest-image-tag:
     aws ecr describe-images \
         --repository-name {{ECR_REPO_NAME}} \
         --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' \
         --filter tagStatus=TAGGED \
         --output text
+
+ecr-get-latest-image:
+    LATEST_IMAGE=$(just ecr-get-latest-image-tag) && \
+    echo {{ECR_URL}}/{{ECR_REPO_NAME}}:$LATEST_IMAGE
 
 ecr-push-lambda:
     just ecr-login
@@ -74,13 +78,12 @@ ecr-push-lambda:
 
 # Docker
 docker-build-lambda:
-    docker build --platform linux/x86_64 -t {{ECR_URL}}/{{ECR_REPO_NAME}}:{{VERSION}} .
-
+    docker build -t {{ECR_URL}}/{{ECR_REPO_NAME}}:{{VERSION}} .
 
 # Lambda
 lambda-deploy:
     just ecr-login
-    LATEST_IMAGE=$(just ecr-get-latest-image) && \
+    LATEST_IMAGE=$(just ecr-get-latest-image-tag) && \
     aws lambda update-function-code \
         --function-name pdf-chat-api \
         --image-uri {{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/{{ECR_REPO_NAME}}:$LATEST_IMAGE

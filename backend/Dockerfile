@@ -1,6 +1,4 @@
-ARG PLATFORM=x86_64
-
-FROM --platform=${PLATFORM} public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.11-arm64
 
 # Copy poetry files
 COPY pyproject.toml poetry.lock ${LAMBDA_TASK_ROOT}/
@@ -8,7 +6,7 @@ COPY pyproject.toml poetry.lock ${LAMBDA_TASK_ROOT}/
 # Install poetry and dependencies
 RUN pip install poetry && \
     poetry config virtualenvs.create false && \
-    poetry install --no-dev --no-interaction --no-ansi
+    poetry install --without dev --no-interaction --no-ansi
 
 # Copy application code
 COPY . ${LAMBDA_TASK_ROOT}/

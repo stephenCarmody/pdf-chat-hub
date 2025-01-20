@@ -17,7 +17,7 @@ build-and-sync-frontend:
     cd frontend && just sync-s3
 
 get-frontend-url:
-    cd infrastructure && terraform output cloudfront_domain
+    cd infrastructure/prod && terraform output cloudfront_domain
 
 # Backend: Lambda
 lambda-build:
@@ -30,7 +30,7 @@ lambda-deploy:
     just backend/lambda-deploy
 
 lambda-run-local:
-    cd backend && docker build --platform linux/amd64 --build-arg PLATFORM=linux/arm64 -t pdf-chat-api . 
+    just lambda-build
     cd backend && docker run -p 9000:8080 \
         -e OPENAI_API_KEY=$(grep OPENAI_API_KEY .env | cut -d '=' -f2 | tr -d ' "') \
         -e OPENAI_SECRET_NAME="pdf-chat/openai-api-key" \
@@ -43,7 +43,7 @@ lambda-run-local:
         pdf-chat-api
 
 lambda-endpoint:
-    cd infrastructure && terraform output api_gateway_url
+    cd infrastructure/prod && terraform output api_gateway_url
 
 lambda-logs:
     aws logs tail /aws/lambda/pdf-chat-api --follow

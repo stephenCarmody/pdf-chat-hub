@@ -4,3 +4,12 @@ lint-check:
 lint-fix:
     tflint --fix
 
+plan:
+    cd prod && \
+    LATEST_IMAGE=$(cd ../../backend && just ecr-get-latest-image) && \
+    terraform plan -var="lambda_image=$LATEST_IMAGE"
+
+apply:
+    cd prod && \
+    LATEST_IMAGE=$(cd ../../backend && just ecr-get-latest-image) && \
+    terraform apply -var="lambda_image=$LATEST_IMAGE" --auto-approve
