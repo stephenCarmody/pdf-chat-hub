@@ -1,0 +1,39 @@
+name: CI Backend
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  POETRY_VERSION: 1.8.4
+  PYTHON_VERSION: 3.11
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install just
+        uses: taiki-e/install-action@just
+      - name: Install Poetry
+        uses: Gr1N/setup-poetry@v8
+        with:
+          poetry-version: ${{ env.POETRY_VERSION }}
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-py${{ env.PYTHON_VERSION }}-poetry${{ env.POETRY_VERSION }}-${{ hashFiles('backend/poetry.lock') }}
+      - name: Install dependencies
+        working-directory: ./backend
+        run: poetry install --no-root
+      - name: Lint
+        working-directory: ./backend
+        run: make lint
+      - name: Test
+        working-directory: ./backend
+        run: make test
