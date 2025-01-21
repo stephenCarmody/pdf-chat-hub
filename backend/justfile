@@ -4,6 +4,8 @@ ECR_URL := AWS_ACCOUNT_ID + ".dkr.ecr." + AWS_REGION + ".amazonaws.com"
 ECR_REPO_NAME := "pdf-chat-api"
 VERSION := `git rev-parse --short HEAD`
 
+export PYTHONPATH := "."
+
 init:
     poetry install
 
