@@ -34,6 +34,7 @@ terraform.tfstate
 terraform.tfstate.backup
 .terraform.lock.hcl
 *.backup
+.terraform.tfstate.lock.info
 
 # Cursor
 .cursorrules

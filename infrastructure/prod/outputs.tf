@@ -17,3 +17,13 @@ output "api_gateway_url" {
   description = "The URL of the API Gateway endpoint"
   value       = aws_apigatewayv2_api.api.api_endpoint
 }
+
+output "vpc_id" { 
+  description = "The ID of the VPC"
+  value = aws_vpc.main.id 
+}
+
+output "private_subnet_ids" { 
+  description = "The IDs of the private subnets"
+  value = aws_subnet.private_subnet[*].id 
+}

@@ -1,3 +1,20 @@
+resource "aws_security_group" "lambda" {
+  name        = "pdf-chat-lambda"
+  description = "Security group for Lambda function"
+  vpc_id      = aws_vpc.main.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "pdf-chat-lambda-sg"
+  }
+}
+
 resource "aws_lambda_function" "api" {
   function_name = "pdf-chat-api"
   package_type = "Image"
@@ -9,6 +26,11 @@ resource "aws_lambda_function" "api" {
   source_code_hash = timestamp()
   publish = true
 
+  vpc_config {
+    subnet_ids         = aws_subnet.private_subnet[*].id
+    security_group_ids = [aws_security_group.lambda.id]
+  }
+
   lifecycle {
     create_before_destroy = true
   }
@@ -17,13 +39,22 @@ resource "aws_lambda_function" "api" {
     variables = {
       CLOUDFRONT_DOMAIN = aws_cloudfront_distribution.s3_distribution.domain_name,
       OPENAI_SECRET_NAME = aws_secretsmanager_secret.openai_api_key.name,
-      SESSION_STATE_BUCKET = aws_s3_bucket.lambda_state.bucket
+      SESSION_STATE_BUCKET = aws_s3_bucket.lambda_state.bucket,
+      DB_HOST = aws_rds_cluster.aurora.endpoint,
+      DB_NAME = aws_rds_cluster.aurora.database_name,
+      DB_USER = aws_rds_cluster.aurora.master_username,
+      DB_PASSWORD = "password"  # Simple password for development
     }
   }
 
   image_config {
     command = ["lambda_handler.handler"]
   }
+}
+
+# Output the Lambda security group ID for use in RDS
+output "lambda_security_group_id" {
+  value = aws_security_group.lambda.id
 }
 
 resource "aws_apigatewayv2_api" "api" {
