@@ -3,12 +3,13 @@ from unittest.mock import ANY, Mock, patch
 
 import pytest
 from langchain_community.chat_models import ChatOpenAI
+from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms import FakeListLLM
 
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
 from repositories.session_db import InMemorySessionStateDB
-from repositories.vector_db import FakeVectorDBFactory
+from repositories.vector_db import InMemoryStore
 from services.pdf_chat_service import PDFChatService
 
 
@@ -41,11 +42,17 @@ def mock_chains():
 
 
 @pytest.fixture
-def pdf_chat_service(mock_chains):
+def vector_store():
+    """Create an InMemoryStore instance for testing."""
+    return InMemoryStore(embeddings=FakeEmbeddings(size=1536))
+
+
+@pytest.fixture
+def pdf_chat_service(mock_chains, vector_store):
     """Create a PDFChatService instance for testing."""
     mock_rag_chain, mock_summary_chain = mock_chains
     return PDFChatService(
-        vector_db_factory=FakeVectorDBFactory(),
+        vector_store=vector_store,
         session_state_db=InMemorySessionStateDB(),
         rag_chain=mock_rag_chain,
         summary_chain=mock_summary_chain,
@@ -61,22 +68,26 @@ def loaded_pdf_chat_service(pdf_chat_service, pdf_path):
 
 
 class TestPDFChatService:
-    def test_pdf_upload(self, pdf_chat_service, pdf_path):
-        """Test that PDF upload works correctly."""
+    def test_pdf_upload_adds_to_vector_store(self, pdf_chat_service, pdf_path):
+        """Test that PDF upload adds documents to both session state and vector store."""
         session_id = "test_session"
         result = pdf_chat_service.upload(pdf_path, session_id)
         doc_id = result["doc_id"]
 
-        # Verify state was saved
-        state = pdf_chat_service.session_state_db.get(f"{session_id}:{doc_id}")
-        assert state is not None
-        assert "docs" in state
-        assert "full_text" in state
-        assert "pages" in state
+        # Get retriever for the specific session and doc
+        retriever = pdf_chat_service.vector_store.get_retriever(session_id, doc_id)
+        assert retriever is not None
 
-        # Verify content exists
-        assert len(state["docs"]) > 0
-        assert len(state["full_text"]) > 0
+        # Verify documents are retrievable
+        docs = retriever.get_relevant_documents("test query")
+        assert len(docs) > 0
+
+        # Verify metadata is correctly set
+        assert all(
+            doc.metadata.get("session_id") == session_id
+            and doc.metadata.get("doc_id") == doc_id
+            for doc in docs
+        )
 
     def test_basic_query(self, loaded_pdf_chat_service):
         """Test querying the PDF content."""
@@ -103,22 +114,18 @@ class TestPDFChatService:
 
         # Create mock router response for summary
         mock_router = Mock()
-        mock_router.invoke.return_value = Mock(task="q_and_a")
+        mock_router.invoke.return_value = Mock(task="summary")
         service.router = mock_router
 
         response = service.query(
-            "What is the main topic of this document?",
+            "Summarize this document",
             session_id=session_id,
             doc_id=doc_id,
             chat_history=[],
         )
 
-        assert response == "Mock RAG response"
-        service.rag_chain.run.assert_called_with(
-            "What is the main topic of this document?",
-            ANY,
-            [],
-        )
+        assert response == "Mock summary response"
+        service.summary_chain.run.assert_called_once()
 
     def test_chat_history(self, loaded_pdf_chat_service):
         """Test chat history functionality."""
@@ -137,8 +144,9 @@ class TestPDFChatService:
             "What is the main topic of this document?",
             session_id=session_id,
             doc_id=doc_id,
-            chat_history=chat_history,
+            chat_history=chat_history.copy(),
         )
+
         chat_history.append(("What is the main topic of this document?", response1))
 
         # Follow-up question
@@ -146,8 +154,10 @@ class TestPDFChatService:
             "Can you elaborate on that?",
             session_id=session_id,
             doc_id=doc_id,
-            chat_history=chat_history,
+            chat_history=chat_history.copy(),
         )
+
+        chat_history.append(("Can you elaborate on that?", response2))
 
         # Verify the calls to rag_chain.run
         assert service.rag_chain.run.call_count == 2
@@ -231,7 +241,6 @@ class TestPDFChatService:
             ANY,
             [("What is document 1 about?", "Mock RAG response")],
         )
-
         pdf_chat_service.rag_chain.run.assert_any_call(
             "What is document 2 about?",
             ANY,

@@ -12,15 +12,10 @@ from botocore.exceptions import ClientError
 logger = logging.getLogger(__name__)
 
 
-class DocumentState(TypedDict):
-    content: str
-    metadata: Dict[str, any]
-
-
 class SessionState(TypedDict):
-    pages: List[Dict[str, Any]]
-    full_text: str
-    docs: List[Dict[str, Any]]
+    """State that needs to be maintained alongside the vector store."""
+
+    full_text: str  # Used for summarization
     chat_history: List[Tuple[str, str]]  # List of (query, response) pairs
 
 

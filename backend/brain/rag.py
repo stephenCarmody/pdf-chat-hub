@@ -5,6 +5,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
+from repositories.vector_db import VectorStoreRetriever
+
 
 class RAGChain:
     def __init__(self):
@@ -24,7 +26,12 @@ class RAGChain:
         self.prompt = ChatPromptTemplate.from_template(self.template)
         self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-    def run(self, query: str, retriever: FAISS, chat_history: List[Tuple[str, str]]):
+    def run(
+        self,
+        query: str,
+        retriever: VectorStoreRetriever,
+        chat_history: List[Tuple[str, str]],
+    ):
         # Create the chain at runtime with the provided retriever
         chain = (
             {
