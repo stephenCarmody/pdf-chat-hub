@@ -80,7 +80,7 @@ ecr-push-lambda:
 
 # Docker
 docker-build-lambda:
-    docker build -t {{ECR_URL}}/{{ECR_REPO_NAME}}:{{VERSION}} .
+    docker buildx build --platform linux/arm64 -t {{ECR_URL}}/{{ECR_REPO_NAME}}:{{VERSION}} .
 
 # Lambda
 lambda-deploy:
