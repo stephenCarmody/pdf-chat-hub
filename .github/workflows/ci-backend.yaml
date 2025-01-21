@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
 
 env:
   POETRY_VERSION: 1.8.4
   PYTHON_VERSION: 3.11
   AWS_REGION: eu-west-1
+  ECR_REPOSITORY: pdf-chat-api
 
 jobs:
   lint-and-test:
@@ -69,6 +72,6 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha | slice:0:7 }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
