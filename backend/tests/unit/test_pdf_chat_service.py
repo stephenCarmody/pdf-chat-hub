@@ -21,18 +21,26 @@ def mock_openai_dependencies():
     fake_llm = FakeListLLM(responses=["This is a test response"])
     mock_chat = Mock(spec=ChatOpenAI)
 
-    with patch("langchain_openai.OpenAI", return_value=fake_llm), patch(
-        "brain.model_router.ChatOpenAI", return_value=mock_chat
-    ), patch(
-        "langchain_community.chat_message_histories.PostgresChatMessageHistory"
-    ) as mock_history:
-        # Setup mock history
-        mock_history.return_value.messages = []
-        mock_history.return_value.add_user_message = Mock()
-        mock_history.return_value.add_ai_message = Mock()
+    with patch("langchain_openai.OpenAI", return_value=fake_llm), \
+         patch("brain.model_router.ChatOpenAI", return_value=mock_chat):
         yield mock_chat
 
     del os.environ["OPENAI_API_KEY"]
+
+
+@pytest.fixture(autouse=True)
+def mock_chat_history():
+    """Mock PostgresChatMessageHistory for all tests."""
+    def create_mock_history(connection_string, session_id):
+        mock_history = Mock()
+        mock_history.messages = []
+        mock_history.add_user_message = Mock()
+        mock_history.add_ai_message = Mock()
+        return mock_history
+
+    with patch("services.pdf_chat_service.PostgresChatMessageHistory") as mock_history_cls:
+        mock_history_cls.side_effect = create_mock_history
+        yield mock_history_cls
 
 
 @pytest.fixture
@@ -190,7 +198,7 @@ class TestPDFChatService:
                 [call("Mock RAG response"), call("Mock RAG response")]
             )
 
-    def test_multiple_documents_per_session(self, pdf_chat_service, pdf_path):
+    def test_multiple_documents_per_session(self, pdf_chat_service, pdf_path, mock_chat_history):
         """Test handling multiple documents within the same session."""
         session_id = "test_session"
 
@@ -210,72 +218,33 @@ class TestPDFChatService:
         mock_router.invoke.return_value = Mock(task="q_and_a")
         pdf_chat_service.router = mock_router
 
-        with patch(
-            "services.pdf_chat_service.PostgresChatMessageHistory"
-        ) as mock_history_cls:
-            # Setup separate mock histories for each document
-            histories = {}
-            histories[f"{session_id}:{doc_1_id}"] = Mock(name=f"history_{doc_1_id}")
-            histories[f"{session_id}:{doc_2_id}"] = Mock(name=f"history_{doc_2_id}")
+        # Query first document
+        response1 = pdf_chat_service.query(
+            session_id=session_id,
+            doc_id=doc_1_id,
+            question="What is document 1 about?",
+        )
 
-            for history in histories.values():
-                history.messages = []
-                history.add_user_message = Mock()
-                history.add_ai_message = Mock()
+        # Query second document
+        response2 = pdf_chat_service.query(
+            session_id=session_id,
+            doc_id=doc_2_id,
+            question="What is document 2 about?",
+        )
 
-            # Configure mock to return different histories based on session_id:doc_id
-            def get_mock_history(connection_string, session_id):
-                print(f"Getting history for session {session_id}")
-                history = histories.get(session_id)
-                if not history:
-                    raise ValueError(f"No history found for session {session_id}")
-                return history
+        # Verify both documents are accessible and queryable
+        assert response1 == "Mock RAG response"
+        assert response2 == "Mock RAG response"
 
-            mock_history_cls.side_effect = get_mock_history
+        # Verify documents are stored separately
+        doc1_content = pdf_chat_service.document_store.get_document(doc_1_id)
+        doc2_content = pdf_chat_service.document_store.get_document(doc_2_id)
+        assert doc1_content is not None
+        assert doc2_content is not None
+        assert doc1_content == doc2_content  # Same file content
 
-            # Query first document
-            response1 = pdf_chat_service.query(
-                session_id=session_id,
-                doc_id=doc_1_id,
-                question="What is document 1 about?",
-            )
-
-            # Query second document
-            response2 = pdf_chat_service.query(
-                session_id=session_id,
-                doc_id=doc_2_id,
-                question="What is document 2 about?",
-            )
-
-            # Verify both documents are accessible and queryable
-            assert response1 == "Mock RAG response"
-            assert response2 == "Mock RAG response"
-
-            # Verify documents are stored separately
-            doc1_content = pdf_chat_service.document_store.get_document(doc_1_id)
-            doc2_content = pdf_chat_service.document_store.get_document(doc_2_id)
-            assert doc1_content is not None
-            assert doc2_content is not None
-            assert (
-                doc1_content == doc2_content
-            )  # As we are using the same file, the content should be the same
-
-            # Print debug info
-            history1 = histories[f"{session_id}:{doc_1_id}"]
-            history2 = histories[f"{session_id}:{doc_2_id}"]
-            print(f"\nHistory 1 ({doc_1_id}) calls:", history1.mock_calls)
-            print(f"History 2 ({doc_2_id}) calls:", history2.mock_calls)
-
-            # Verify chat histories were kept separate
-            assert (
-                history1.add_user_message.call_count == 1
-            ), "History 1 should have exactly 1 message"
-            assert (
-                history2.add_user_message.call_count == 1
-            ), "History 2 should have exactly 1 message"
-            history1.add_user_message.assert_called_once_with(
-                "What is document 1 about?"
-            )
-            history2.add_user_message.assert_called_once_with(
-                "What is document 2 about?"
-            )
+        # Verify chat histories were kept separate
+        history_calls = mock_chat_history.call_args_list
+        assert len(history_calls) == 2
+        assert history_calls[0].kwargs['session_id'] == f"{session_id}:{doc_1_id}"
+        assert history_calls[1].kwargs['session_id'] == f"{session_id}:{doc_2_id}"
