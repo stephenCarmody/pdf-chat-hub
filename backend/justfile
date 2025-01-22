@@ -83,7 +83,9 @@ ecr-push-lambda:
 
 # Docker
 docker-build-lambda:
-    docker buildx build --platform linux/arm64 -t {{ECR_URL}}/{{ECR_REPO_NAME}}:{{VERSION}} .
+    docker buildx build --platform linux/arm64 \
+        --load \
+        -t {{ECR_URL}}/{{ECR_REPO_NAME}}:{{VERSION}} .
 
 
 docker-up:
@@ -101,6 +103,9 @@ lambda-deploy:
         --function-name pdf-chat-api \
         --image-uri {{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/{{ECR_REPO_NAME}}:$LATEST_IMAGE
 
+ci-build-and-push:
+    just docker-build-lambda
+    just docker-push-lambda
 
 # Vector store
 db-login-local:
