@@ -7,7 +7,7 @@ VERSION := `git rev-parse --short HEAD`
 export PYTHONPATH := "."
 
 init:
-    poetry install
+    poetry install 
 
 run:
     poetry run python main.py
@@ -19,8 +19,11 @@ lint-check:
 lint-fix:
     poetry run isort . && poetry run black .
 
-test:
-    poetry run pytest -W ignore::DeprecationWarning .
+test-unit:
+    poetry run pytest -W ignore::DeprecationWarning . --ignore=tests/integration/
+
+test-integration:
+    poetry run pytest -W ignore::DeprecationWarning . --ignore=tests/unit/
 
 clean:
     rm -rf .pytest_cache 
@@ -81,6 +84,14 @@ ecr-push-lambda:
 # Docker
 docker-build-lambda:
     docker buildx build --platform linux/arm64 -t {{ECR_URL}}/{{ECR_REPO_NAME}}:{{VERSION}} .
+
+
+docker-up:
+    docker compose up -d
+
+docker-down:
+    docker compose down
+
 
 # Lambda
 lambda-deploy:

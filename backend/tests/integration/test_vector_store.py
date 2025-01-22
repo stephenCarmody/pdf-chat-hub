@@ -33,6 +33,7 @@ def bitcoin_chunks():
     return documents
 
 
+@pytest.mark.integration
 def test_add_documents_to_vector_store(vector_store, bitcoin_chunks):
     """Test adding document chunks to the vector store"""
     # GIVEN chunks from the Bitcoin whitepaper
@@ -53,6 +54,8 @@ def test_add_documents_to_vector_store(vector_store, bitcoin_chunks):
     assert all(doc.metadata["doc_id"] == doc_id for doc in results)
 
 
+
+@pytest.mark.integration
 def test_similarity_search(vector_store, bitcoin_chunks):
     """Test similarity search functionality"""
     # GIVEN documents are stored in the vector store

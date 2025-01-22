@@ -37,6 +37,7 @@ def vector_table(db_connection, db_cursor):
     db_connection.commit()
 
 
+@pytest.mark.integration
 def test_postgres_connection_is_healthy(db_cursor):
     """Test PostgreSQL connection using settings"""
     # WHEN we attempt to execute a simple query
@@ -47,6 +48,7 @@ def test_postgres_connection_is_healthy(db_cursor):
     assert result[0] == 1
 
 
+@pytest.mark.integration
 def test_pg_vector_extension_enabled(db_cursor):
     """Test that pgvector extension is properly initialized"""
     # WHEN we check installed extensions
@@ -58,6 +60,7 @@ def test_pg_vector_extension_enabled(db_cursor):
     assert result[0] == "vector"
 
 
+@pytest.mark.integration
 def test_pg_vector_table_creation(db_cursor):
     """Test creating a table with vector type"""
     # WHEN we create a test table with vector type
@@ -82,6 +85,7 @@ def test_pg_vector_table_creation(db_cursor):
     assert result[1][1] == "USER-DEFINED"
 
 
+@pytest.mark.integration
 def test_pg_vector_single_insert(db_connection, db_cursor, vector_table):
     """Test inserting and retrieving a single vector"""
     # WHEN we insert a vector
@@ -94,6 +98,7 @@ def test_pg_vector_single_insert(db_connection, db_cursor, vector_table):
     assert result is not None
 
 
+@pytest.mark.integration
 def test_pg_vector_similarity_search(db_connection, db_cursor, vector_table):
     """Test vector similarity search functionality"""
     # GIVEN multiple vectors in the database

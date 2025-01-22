@@ -41,7 +41,7 @@ jobs:
         run: just lint-check
       - name: Test
         working-directory: ./backend
-        run: just test
+        run: just test-unit
 
   build-and-push:
     needs: lint-and-test
