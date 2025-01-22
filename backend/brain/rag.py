@@ -1,9 +1,9 @@
-from typing import Dict, List, Tuple
+from typing import List
 
-from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain_community.chat_message_histories import PostgresChatMessageHistory
 
 from repositories.vector_db import VectorStoreRetriever
 
@@ -30,7 +30,7 @@ class RAGChain:
         self,
         query: str,
         retriever: VectorStoreRetriever,
-        chat_history: List[Tuple[str, str]],
+        messages: List,
     ):
         # Create the chain at runtime with the provided retriever
         chain = (
@@ -38,26 +38,20 @@ class RAGChain:
                 "context": lambda x: self._combine_documents(
                     retriever.invoke(x["question"])
                 ),
-                "chat_history": lambda x: self._format_chat_history(x["chat_history"]),
+                "chat_history": lambda x: self._format_messages(x["chat_history"]),
                 "question": lambda x: x["question"],
             }
             | self.prompt
             | self.llm
             | StrOutputParser()
         )
-        return chain.invoke({"question": query, "chat_history": chat_history})
+        return chain.invoke({"question": query, "chat_history": messages})
 
-    def _format_chat_history(self, chat_history: List[Dict[str, str]]) -> str:
-        """Format chat history into a string."""
-        if not chat_history:
+    def _format_messages(self, messages: List) -> str:
+        """Format messages from PostgresChatMessageHistory."""
+        if not messages:
             return "No previous conversation."
-
-        formatted_messages = []
-        for msg in chat_history:
-            prefix = "Human" if msg.role == "user" else "Assistant"
-            formatted_messages.append(f"{prefix}: {msg.content}")
-
-        return "\n".join(formatted_messages)
+        return "\n".join([f"{msg.type}: {msg.content}" for msg in messages])
 
     def _combine_documents(self, docs):
         """Combine multiple documents into a single string."""
