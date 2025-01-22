@@ -105,7 +105,7 @@ lambda-deploy:
 
 ci-build-and-push:
     just docker-build-lambda
-    just docker-push-lambda
+    just ecr-push-lambda
 
 # Vector store
 db-login-local:
