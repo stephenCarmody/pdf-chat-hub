@@ -21,8 +21,9 @@ def mock_openai_dependencies():
     fake_llm = FakeListLLM(responses=["This is a test response"])
     mock_chat = Mock(spec=ChatOpenAI)
 
-    with patch("langchain_openai.OpenAI", return_value=fake_llm), \
-         patch("brain.model_router.ChatOpenAI", return_value=mock_chat):
+    with patch("langchain_openai.OpenAI", return_value=fake_llm), patch(
+        "brain.model_router.ChatOpenAI", return_value=mock_chat
+    ):
         yield mock_chat
 
     del os.environ["OPENAI_API_KEY"]
@@ -31,6 +32,7 @@ def mock_openai_dependencies():
 @pytest.fixture(autouse=True)
 def mock_chat_history():
     """Mock PostgresChatMessageHistory for all tests."""
+
     def create_mock_history(connection_string, session_id):
         mock_history = Mock()
         mock_history.messages = []
@@ -38,7 +40,9 @@ def mock_chat_history():
         mock_history.add_ai_message = Mock()
         return mock_history
 
-    with patch("services.pdf_chat_service.PostgresChatMessageHistory") as mock_history_cls:
+    with patch(
+        "services.pdf_chat_service.PostgresChatMessageHistory"
+    ) as mock_history_cls:
         mock_history_cls.side_effect = create_mock_history
         yield mock_history_cls
 
@@ -198,7 +202,9 @@ class TestPDFChatService:
                 [call("Mock RAG response"), call("Mock RAG response")]
             )
 
-    def test_multiple_documents_per_session(self, pdf_chat_service, pdf_path, mock_chat_history):
+    def test_multiple_documents_per_session(
+        self, pdf_chat_service, pdf_path, mock_chat_history
+    ):
         """Test handling multiple documents within the same session."""
         session_id = "test_session"
 
@@ -246,5 +252,5 @@ class TestPDFChatService:
         # Verify chat histories were kept separate
         history_calls = mock_chat_history.call_args_list
         assert len(history_calls) == 2
-        assert history_calls[0].kwargs['session_id'] == f"{session_id}:{doc_1_id}"
-        assert history_calls[1].kwargs['session_id'] == f"{session_id}:{doc_2_id}"
+        assert history_calls[0].kwargs["session_id"] == f"{session_id}:{doc_1_id}"
+        assert history_calls[1].kwargs["session_id"] == f"{session_id}:{doc_2_id}"
