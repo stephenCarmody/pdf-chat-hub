@@ -5,7 +5,7 @@ from typing import Dict, Optional
 import boto3
 import psycopg
 from botocore.exceptions import ClientError
-from psycopg2.extras import RealDictCursor
+from psycopg.rows import dict_row
 
 from settings import settings
 
@@ -69,7 +69,7 @@ class PostgresDocumentStore(DocumentStore):
         full_text: str,
         filename: Optional[str] = None,
     ) -> None:
-        with psycopg2.connect(self.connection_string) as conn:
+        with psycopg.connect(self.connection_string, row_factory=dict_row) as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -80,8 +80,8 @@ class PostgresDocumentStore(DocumentStore):
                 )
 
     def get_document(self, doc_id: str) -> Optional[str]:
-        with psycopg2.connect(self.connection_string) as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        with psycopg.connect(self.connection_string, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
                 cur.execute(
                     """
                     SELECT full_text 
