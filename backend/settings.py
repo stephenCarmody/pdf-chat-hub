@@ -10,9 +10,19 @@ class Settings(BaseSettings):
     db_password: str = Field("postgres", env="DB_PASSWORD")
     db_name: str = Field("pdf_chat", env="DB_NAME")
 
+    use_postgres_db: bool = Field(True, env="USE_POSTGRES_DB")
+
     @property
     def connection_string(self):
         return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+    
+    @property
+    def is_local(self):
+        return True if self.db_host == "localhost" else False
+    
+    @property
+    def use_postgres_db(self):
+        return True if self.use_postgres_db else False
 
     class Config:
         env_file = ".env"
