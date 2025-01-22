@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg
 import pytest
 
 from settings import settings
@@ -7,7 +7,7 @@ from settings import settings
 @pytest.fixture
 def db_connection():
     """Fixture that creates and tears down a database connection"""
-    conn = psycopg2.connect(settings.connection_string)
+    conn = psycopg.connect(settings.connection_string)
     yield conn
     conn.close()
 
