@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Dict, List
 
 from langchain.schema import Document
 from langchain_community.vectorstores.pgvector import PGVector
