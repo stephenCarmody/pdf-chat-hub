@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    openai_api_key: str = Field(..., env="OPENAI_API_KEY")
+    openai_api_key: str = Field("mock-key", env="OPENAI_API_KEY")
     db_host: str = Field("localhost", env="DB_HOST")
     db_port: int = Field(5432, env="DB_PORT")
     db_user: str = Field("postgres", env="DB_USER")
