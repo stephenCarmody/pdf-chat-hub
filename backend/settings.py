@@ -20,10 +20,6 @@ class Settings(BaseSettings):
     def is_local(self):
         return True if self.db_host == "localhost" else False
 
-    @property
-    def use_postgres_db(self):
-        return True if self.use_postgres_db else False
-
     class Config:
         env_file = ".env"
 
