@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.11-arm64
+FROM public.ecr.aws/lambda/python:3.13-arm64
 
 # Copy poetry files
 COPY pyproject.toml poetry.lock ${LAMBDA_TASK_ROOT}/
