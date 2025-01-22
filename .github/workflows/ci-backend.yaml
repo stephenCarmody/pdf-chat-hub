@@ -48,7 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+      - name: Install just
+        uses: taiki-e/install-action@just
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
