@@ -54,7 +54,6 @@ def test_add_documents_to_vector_store(vector_store, bitcoin_chunks):
     assert all(doc.metadata["doc_id"] == doc_id for doc in results)
 
 
-
 @pytest.mark.integration
 def test_similarity_search(vector_store, bitcoin_chunks):
     """Test similarity search functionality"""
