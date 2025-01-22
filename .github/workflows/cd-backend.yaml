@@ -30,14 +30,5 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v1
 
-      - name: Get latest image tag
-        id: get-latest-image
-        working-directory: backend
-        run: |
-          echo "LATEST_IMAGE=$(just ecr-get-latest-image)" >> $GITHUB_OUTPUT
-
-      - name: Deploy to Lambda
-        run: |
-          aws lambda update-function-code \
-            --function-name pdf-chat-api \
-            --image-uri ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.get-latest-image.outputs.LATEST_IMAGE }}
+      - name: Get latest image & deploy
+        run: just lambda-deploy
