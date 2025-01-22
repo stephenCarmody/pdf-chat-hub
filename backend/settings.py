@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     use_postgres_db: bool = Field(True, env="USE_POSTGRES_DB")
     document_store_type: str = Field("s3", env="DOCUMENT_STORE_TYPE")
 
-    s3_bucket_name: str = Field("pdf-chat-hub", env="S3_BUCKET_NAME")
+    s3_bucket_name: str = Field("pdf-chat-lambda-state", env="S3_BUCKET_NAME")
 
     @property
     def connection_string(self):
