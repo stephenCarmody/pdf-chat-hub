@@ -13,3 +13,6 @@ apply:
     cd prod && \
     LATEST_IMAGE=$(cd ../../backend && just ecr-get-latest-image) && \
     terraform apply -var="lambda_image=$LATEST_IMAGE" --auto-approve
+
+
+enable-vector-store:

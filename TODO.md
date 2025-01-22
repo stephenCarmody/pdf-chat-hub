@@ -1,8 +1,8 @@
 
 ## Vector DB
-[] Locally test PGVector with ChatPDFService.
+[x] Locally test PGVector with ChatPDFService.
+[x] Check PGVector is enabled in AWS
 [] Replace chat history implementation Langchain implementation for saving state. 
-[] Check PGVector is enabled in AWS
 [] Try deploying VectorDB app imlementation to prod & test.
 
 

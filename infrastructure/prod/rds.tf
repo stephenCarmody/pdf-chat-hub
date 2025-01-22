@@ -25,6 +25,7 @@ resource "aws_rds_cluster" "aurora" {
   master_username       = "pdf_chat_admin"
   master_password       = "password" # Simple password for development
   storage_encrypted    = true
+  enable_http_endpoint  = true 
 
   
   db_subnet_group_name   = aws_db_subnet_group.aurora.name
