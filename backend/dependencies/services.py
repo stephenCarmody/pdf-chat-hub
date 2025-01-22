@@ -5,7 +5,12 @@ from langchain_openai import OpenAIEmbeddings
 
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
-from repositories.session_db import FileSystemSessionStateDB
+from repositories.session_db import (
+    DocumentStore,
+    InMemoryDocumentStore,
+    PostgresDocumentStore,
+    S3DocumentStore,
+)
 from repositories.vector_db import InMemoryVectorStore, PGVectorStore
 from services.pdf_chat_service import PDFChatService
 from settings import settings
@@ -24,11 +29,21 @@ def get_vector_store() -> VectorStore:
         return InMemoryVectorStore(embeddings=embeddings)
 
 
+def get_document_store() -> DocumentStore:
+    """Get's the correct document store implementation based on the environment."""
+    DOCUMENT_STORES = {
+        "s3": S3DocumentStore,
+        "in_memory": InMemoryDocumentStore,
+        "postgres": PostgresDocumentStore,
+    }
+    return DOCUMENT_STORES[settings.document_store_type]()
+
+
 def get_pdf_service() -> PDFChatService:
     """Dependency provider for PDFChatService"""
     return PDFChatService(
         vector_store=get_vector_store(),
-        session_state_db=FileSystemSessionStateDB(),
+        document_store=get_document_store(),
         rag_chain=RAGChain(),
         summary_chain=SummaryChain(),
     )

@@ -15,17 +15,11 @@ export const uploadPDF = async (file, sessionId) => {
   return response.data
 }
 
-export const sendQuery = async (query, sessionId, docId, chatHistory = []) => {
+export const sendQuery = async (query, sessionId, docId) => {
   const payload = {
     query: query,
     session_id: sessionId,
-    doc_id: docId,
-    chat_history: (chatHistory || [])
-      .map((msg) => ({
-        role: msg.type || 'user',
-        content: msg.content
-      }))
-      .filter((msg) => msg.content && msg.role)
+    doc_id: docId
   }
 
   console.log('Sending payload:', JSON.stringify(payload, null, 2))

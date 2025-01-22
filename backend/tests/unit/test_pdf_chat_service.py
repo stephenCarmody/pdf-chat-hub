@@ -1,5 +1,5 @@
 import os
-from unittest.mock import ANY, Mock, patch
+from unittest.mock import ANY, Mock, call, patch
 
 import pytest
 from langchain_community.chat_models import ChatOpenAI
@@ -8,7 +8,7 @@ from langchain_community.llms import FakeListLLM
 
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
-from repositories.session_db import InMemorySessionStateDB
+from repositories.session_db import InMemoryDocumentStore
 from repositories.vector_db import InMemoryStore
 from services.pdf_chat_service import PDFChatService
 
@@ -23,7 +23,13 @@ def mock_openai_dependencies():
 
     with patch("langchain_openai.OpenAI", return_value=fake_llm), patch(
         "brain.model_router.ChatOpenAI", return_value=mock_chat
-    ):
+    ), patch(
+        "langchain_community.chat_message_histories.PostgresChatMessageHistory"
+    ) as mock_history:
+        # Setup mock history
+        mock_history.return_value.messages = []
+        mock_history.return_value.add_user_message = Mock()
+        mock_history.return_value.add_ai_message = Mock()
         yield mock_chat
 
     del os.environ["OPENAI_API_KEY"]
@@ -48,12 +54,18 @@ def vector_store():
 
 
 @pytest.fixture
-def pdf_chat_service(mock_chains, vector_store):
+def document_store():
+    """Create an InMemoryDocumentStore instance for testing."""
+    return InMemoryDocumentStore()
+
+
+@pytest.fixture
+def pdf_chat_service(mock_chains, vector_store, document_store):
     """Create a PDFChatService instance for testing."""
     mock_rag_chain, mock_summary_chain = mock_chains
     return PDFChatService(
         vector_store=vector_store,
-        session_state_db=InMemorySessionStateDB(),
+        document_store=document_store,
         rag_chain=mock_rag_chain,
         summary_chain=mock_summary_chain,
     )
@@ -69,10 +81,14 @@ def loaded_pdf_chat_service(pdf_chat_service, pdf_path):
 
 class TestPDFChatService:
     def test_pdf_upload_adds_to_vector_store(self, pdf_chat_service, pdf_path):
-        """Test that PDF upload adds documents to both session state and vector store."""
+        """Test that PDF upload adds documents to both document store and vector store."""
         session_id = "test_session"
         result = pdf_chat_service.upload(pdf_path, session_id)
         doc_id = result["doc_id"]
+
+        # Verify document is stored
+        full_text = pdf_chat_service.document_store.get_document(doc_id)
+        assert full_text is not None
 
         # Get retriever for the specific session and doc
         retriever = pdf_chat_service.vector_store.get_retriever(session_id, doc_id)
@@ -99,10 +115,9 @@ class TestPDFChatService:
         service.router = mock_router
 
         response = service.query(
-            "What is this document about?",
             session_id=session_id,
             doc_id=doc_id,
-            chat_history=[],
+            question="What is this document about?",
         )
         assert response is not None
         assert isinstance(response, str)
@@ -118,17 +133,16 @@ class TestPDFChatService:
         service.router = mock_router
 
         response = service.query(
-            "Summarize this document",
             session_id=session_id,
             doc_id=doc_id,
-            chat_history=[],
+            question="Summarize this document",
         )
 
         assert response == "Mock summary response"
         service.summary_chain.run.assert_called_once()
 
-    def test_chat_history(self, loaded_pdf_chat_service):
-        """Test chat history functionality."""
+    def test_chat_history_integration(self, loaded_pdf_chat_service):
+        """Test chat history integration with PostgresChatMessageHistory."""
         service, session_id, doc_id = loaded_pdf_chat_service
 
         # Create mock router response for Q&A
@@ -136,45 +150,45 @@ class TestPDFChatService:
         mock_router.invoke.return_value = Mock(task="q_and_a")
         service.router = mock_router
 
-        # Simulate a conversation
-        chat_history = []
+        # Mock PostgresChatMessageHistory before making any calls
+        with patch(
+            "services.pdf_chat_service.PostgresChatMessageHistory"
+        ) as mock_history_cls:
+            mock_history = Mock()
+            mock_history.messages = []
+            mock_history.add_user_message = Mock()
+            mock_history.add_ai_message = Mock()
+            mock_history_cls.return_value = mock_history
 
-        # First question
-        response1 = service.query(
-            "What is the main topic of this document?",
-            session_id=session_id,
-            doc_id=doc_id,
-            chat_history=chat_history.copy(),
-        )
+            # First question
+            response1 = service.query(
+                session_id=session_id,
+                doc_id=doc_id,
+                question="What is the main topic?",
+            )
 
-        chat_history.append(("What is the main topic of this document?", response1))
+            # Follow-up question
+            response2 = service.query(
+                session_id=session_id,
+                doc_id=doc_id,
+                question="Can you elaborate?",
+            )
 
-        # Follow-up question
-        response2 = service.query(
-            "Can you elaborate on that?",
-            session_id=session_id,
-            doc_id=doc_id,
-            chat_history=chat_history.copy(),
-        )
+            # Verify responses
+            assert response1 == "Mock RAG response"
+            assert response2 == "Mock RAG response"
 
-        chat_history.append(("Can you elaborate on that?", response2))
+            # Verify chat history was updated correctly
+            assert mock_history.add_user_message.call_count == 2
+            assert mock_history.add_ai_message.call_count == 2
 
-        # Verify the calls to rag_chain.run
-        assert service.rag_chain.run.call_count == 2
-
-        # Verify first call with empty chat history
-        service.rag_chain.run.assert_any_call(
-            "What is the main topic of this document?",
-            ANY,
-            [],
-        )
-
-        # Verify second call with updated chat history
-        service.rag_chain.run.assert_any_call(
-            "Can you elaborate on that?",
-            ANY,
-            [("What is the main topic of this document?", "Mock RAG response")],
-        )
+            # Verify the correct messages were added in order
+            mock_history.add_user_message.assert_has_calls(
+                [call("What is the main topic?"), call("Can you elaborate?")]
+            )
+            mock_history.add_ai_message.assert_has_calls(
+                [call("Mock RAG response"), call("Mock RAG response")]
+            )
 
     def test_multiple_documents_per_session(self, pdf_chat_service, pdf_path):
         """Test handling multiple documents within the same session."""
@@ -196,53 +210,72 @@ class TestPDFChatService:
         mock_router.invoke.return_value = Mock(task="q_and_a")
         pdf_chat_service.router = mock_router
 
-        # Query first document with chat history
-        chat_history1 = []
-        response1 = pdf_chat_service.query(
-            "What is document 1 about?",
-            session_id=session_id,
-            doc_id=doc_1_id,
-            chat_history=chat_history1,
-        )
-        chat_history1.append(("What is document 1 about?", response1))
+        with patch(
+            "services.pdf_chat_service.PostgresChatMessageHistory"
+        ) as mock_history_cls:
+            # Setup separate mock histories for each document
+            histories = {}
+            histories[f"{session_id}:{doc_1_id}"] = Mock(name=f"history_{doc_1_id}")
+            histories[f"{session_id}:{doc_2_id}"] = Mock(name=f"history_{doc_2_id}")
 
-        # Follow-up query for first document
-        response1_followup = pdf_chat_service.query(
-            "Tell me more about document 1",
-            session_id=session_id,
-            doc_id=doc_1_id,
-            chat_history=chat_history1,
-        )
+            for history in histories.values():
+                history.messages = []
+                history.add_user_message = Mock()
+                history.add_ai_message = Mock()
 
-        # Query second document with different chat history
-        chat_history2 = []
-        response2 = pdf_chat_service.query(
-            "What is document 2 about?",
-            session_id=session_id,
-            doc_id=doc_2_id,
-            chat_history=chat_history2,
-        )
-        chat_history2.append(("What is document 2 about?", response2))
+            # Configure mock to return different histories based on session_id:doc_id
+            def get_mock_history(connection_string, session_id):
+                print(f"Getting history for session {session_id}")
+                history = histories.get(session_id)
+                if not history:
+                    raise ValueError(f"No history found for session {session_id}")
+                return history
 
-        # Verify both documents are accessible and queryable
-        assert response1 == "Mock RAG response"
-        assert response2 == "Mock RAG response"
+            mock_history_cls.side_effect = get_mock_history
 
-        # Verify states are stored separately
-        state1 = pdf_chat_service.session_state_db.get(f"{session_id}:{doc_1_id}")
-        state2 = pdf_chat_service.session_state_db.get(f"{session_id}:{doc_2_id}")
+            # Query first document
+            response1 = pdf_chat_service.query(
+                session_id=session_id,
+                doc_id=doc_1_id,
+                question="What is document 1 about?",
+            )
 
-        assert state1 is not None
-        assert state2 is not None
+            # Query second document
+            response2 = pdf_chat_service.query(
+                session_id=session_id,
+                doc_id=doc_2_id,
+                question="What is document 2 about?",
+            )
 
-        # Verify chat histories were passed correctly
-        pdf_chat_service.rag_chain.run.assert_any_call(
-            "Tell me more about document 1",
-            ANY,
-            [("What is document 1 about?", "Mock RAG response")],
-        )
-        pdf_chat_service.rag_chain.run.assert_any_call(
-            "What is document 2 about?",
-            ANY,
-            [],  # Should have empty history as it's the first query
-        )
+            # Verify both documents are accessible and queryable
+            assert response1 == "Mock RAG response"
+            assert response2 == "Mock RAG response"
+
+            # Verify documents are stored separately
+            doc1_content = pdf_chat_service.document_store.get_document(doc_1_id)
+            doc2_content = pdf_chat_service.document_store.get_document(doc_2_id)
+            assert doc1_content is not None
+            assert doc2_content is not None
+            assert (
+                doc1_content == doc2_content
+            )  # As we are using the same file, the content should be the same
+
+            # Print debug info
+            history1 = histories[f"{session_id}:{doc_1_id}"]
+            history2 = histories[f"{session_id}:{doc_2_id}"]
+            print(f"\nHistory 1 ({doc_1_id}) calls:", history1.mock_calls)
+            print(f"History 2 ({doc_2_id}) calls:", history2.mock_calls)
+
+            # Verify chat histories were kept separate
+            assert (
+                history1.add_user_message.call_count == 1
+            ), "History 1 should have exactly 1 message"
+            assert (
+                history2.add_user_message.call_count == 1
+            ), "History 2 should have exactly 1 message"
+            history1.add_user_message.assert_called_once_with(
+                "What is document 1 about?"
+            )
+            history2.add_user_message.assert_called_once_with(
+                "What is document 2 about?"
+            )

@@ -39,13 +39,12 @@ async def query(
     logger.info(f"Querying for session {request.session_id}")
     logger.info(f"Query: {request.query}")
     logger.info(f"Doc ID: {request.doc_id}")
-    logger.info(f"Chat history: {request.chat_history}")
+
     try:
         result = pdf_service.query(
-            query=request.query,
             session_id=request.session_id,
             doc_id=request.doc_id,
-            chat_history=request.chat_history,
+            question=request.query,
         )
         return {"message": result}
     except Exception as e:

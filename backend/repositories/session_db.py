@@ -1,98 +1,141 @@
-import json
 import logging
-import os
-import pickle
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, Optional
 
 import boto3
+import psycopg2
 from botocore.exceptions import ClientError
+from psycopg2.extras import RealDictCursor
+
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
 
-class SessionState(TypedDict):
-    """State that needs to be maintained alongside the vector store."""
+class DocumentStore(ABC):
+    """Store for document full text content."""
 
-    full_text: str  # Used for summarization
-    chat_history: List[Tuple[str, str]]  # List of (query, response) pairs
-
-
-class SessionStateDB(ABC):
     @abstractmethod
-    def put(self, session_id: str, state: SessionState) -> None:
-        """Store state for a session"""
+    def put_document(
+        self,
+        doc_id: str,
+        session_id: str,
+        full_text: str,
+        filename: Optional[str] = None,
+    ) -> None:
+        """Store document content"""
         pass
 
     @abstractmethod
-    def get(self, session_id: str) -> Optional[SessionState]:
-        """Retrieve state for a session"""
+    def get_document(self, doc_id: str) -> Optional[str]:
+        """Retrieve document content"""
         pass
 
 
-class InMemorySessionStateDB(SessionStateDB):
+class InMemoryDocumentStore(DocumentStore):
+    """In-memory implementation of DocumentStore for testing."""
+
     def __init__(self):
-        self._db: Dict[str, SessionState] = {}
-        logger.info("Using in-memory session state database")
+        self._docs: Dict[str, Dict] = {}
+        logger.info("Using in-memory document store")
 
-    def put(self, session_id: str, state: SessionState) -> None:
-        self._db[session_id] = state
-        logger.info(f"Saved state for session {session_id}")
+    def put_document(
+        self,
+        doc_id: str,
+        session_id: str,
+        full_text: str,
+        filename: Optional[str] = None,
+    ) -> None:
+        self._docs[doc_id] = {
+            "session_id": session_id,
+            "full_text": full_text,
+            "filename": filename,
+        }
+        logger.info(f"Saved document {doc_id} to memory")
 
-    def get(self, session_id: str) -> Optional[SessionState]:
-        return self._db.get(session_id)
+    def get_document(self, doc_id: str) -> Optional[str]:
+        doc = self._docs.get(doc_id)
+        return doc["full_text"] if doc else None
 
 
-class S3SessionStateDB(SessionStateDB):
+class PostgresDocumentStore(DocumentStore):
     def __init__(self):
-        self.bucket_name = os.getenv("SESSION_STATE_BUCKET")
+        self.connection_string = settings.connection_string
+
+    def put_document(
+        self,
+        doc_id: str,
+        session_id: str,
+        full_text: str,
+        filename: Optional[str] = None,
+    ) -> None:
+        with psycopg2.connect(self.connection_string) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO documents (id, session_id, full_text, filename)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (doc_id, session_id, full_text, filename),
+                )
+
+    def get_document(self, doc_id: str) -> Optional[str]:
+        with psycopg2.connect(self.connection_string) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT full_text 
+                    FROM documents 
+                    WHERE id = %s
+                    """,
+                    (doc_id,),
+                )
+                result = cur.fetchone()
+                return result["full_text"] if result else None
+
+
+class S3DocumentStore(DocumentStore):
+    """S3-based implementation of DocumentStore."""
+
+    def __init__(self):
+        self.bucket_name = settings.s3_bucket_name
         self.s3_client = boto3.client("s3")
+        logger.info(f"Using S3 document store with bucket: {settings.s3_bucket_name}")
 
-    def put(self, session_id: str, state: SessionState) -> None:
-        serialized_state = pickle.dumps(state)
-        self.s3_client.put_object(
-            Bucket=self.bucket_name,
-            Key=self._get_key(session_id),
-            Body=serialized_state,
-        )
-
-    def get(self, session_id: str) -> Optional[SessionState]:
+    def put_document(
+        self,
+        doc_id: str,
+        session_id: str,
+        full_text: str,
+        filename: Optional[str] = None,
+    ) -> None:
         try:
-            response = self.s3_client.get_object(
-                Bucket=self.bucket_name, Key=self._get_key(session_id)
+            # Store the document content
+            key = self._get_document_key(doc_id)
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key=key,
+                Body=full_text.encode("utf-8"),
+                Metadata={"session_id": session_id, "filename": filename or ""},
             )
-            return pickle.loads(response["Body"].read())
+            logger.info(f"Successfully stored document {doc_id} in S3")
+        except Exception as e:
+            logger.error(f"Failed to store document in S3: {str(e)}")
+            raise
+
+    def get_document(self, doc_id: str) -> Optional[str]:
+        try:
+            key = self._get_document_key(doc_id)
+            response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
+            return response["Body"].read().decode("utf-8")
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchKey":
                 return None
             raise
+        except Exception as e:
+            logger.error(f"Failed to retrieve document from S3: {str(e)}")
+            raise
 
-    def _get_key(self, session_id: str) -> str:
-        return f"chat_states/{session_id}/state.pkl"
-
-
-# TODO: Figure out where folder is on system -> Implement some cleanup for tests
-class FileSystemSessionStateDB(SessionStateDB):
-    def __init__(self, storage_dir: str = "/tmp/pdf_chat_sessions"):
-        self.storage_dir = Path(storage_dir)
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Using file system session state database at {self.storage_dir}")
-
-    def put(self, session_id: str, state: SessionState) -> None:
-        file_path = self.storage_dir / f"{session_id}.json"
-        logger.info(f"Saving state to {file_path}")
-        with open(file_path, "w") as f:
-            json.dump(state, f)
-        logger.info(f"Successfully saved state for session {session_id}")
-
-    def get(self, session_id: str) -> Optional[SessionState]:
-        file_path = self.storage_dir / f"{session_id}.json"
-        logger.info(f"Trying to load state from {file_path}")
-        if not file_path.exists():
-            logger.warning(f"No state file found for session {session_id}")
-            return None
-        with open(file_path, "r") as f:
-            state = json.load(f)
-            logger.info(f"Loaded state.")
-            return state
+    def _get_document_key(self, doc_id: str) -> str:
+        """Generate S3 key for a document."""
+        return f"documents/{doc_id}/content.txt"

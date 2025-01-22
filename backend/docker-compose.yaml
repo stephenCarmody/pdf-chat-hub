@@ -21,9 +21,13 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DOCUMENT_STORE_TYPE=${DOCUMENT_STORE_TYPE}
+      - DB_HOST=db
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
     ports:
       - "8000:8000"
     volumes:
@@ -31,7 +35,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: poetry run python -m debug
 
 volumes:
   postgres_data:

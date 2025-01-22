@@ -40,7 +40,6 @@ def test_query_endpoint(test_client):
         "query": "test question",
         "session_id": "test-session",
         "doc_id": "123",
-        "chat_history": [],
     }
 
     # Make request
@@ -52,5 +51,5 @@ def test_query_endpoint(test_client):
 
     # Verify service was called correctly
     mock_pdf_service.query.assert_called_once_with(
-        query="test question", session_id="test-session", doc_id="123", chat_history=[]
+        session_id="test-session", doc_id="123", question="test question"
     )

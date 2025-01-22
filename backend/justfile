@@ -43,18 +43,13 @@ upload-bitcoin:
 query message:
     curl -X POST "http://0.0.0.0:8000/prod/query" \
         -H "Content-Type: application/json" \
-        -d "{\"query\": \"{{message}}\", \"session_id\": \"123\", \"chat_history\": []}"
+        -d "{\"query\": \"{{message}}\", \"session_id\": \"123\", \"doc_id\": \"d0ddc503-cb48-47fb-be92-298ac322369d\"}"
 
 # Example quick query about the paper
 query-paper:
     curl -X POST "http://0.0.0.0:8000/prod/query" \
         -H "Content-Type: application/json" \
-        -d "{\"query\": \"What is this paper about?\", \"session_id\": \"123\", \"chat_history\": []}"
-
-query-paper-with-history:
-    curl -X POST "http://0.0.0.0:8000/prod/query" \
-        -H "Content-Type: application/json" \
-        -d "{\"query\": \"What did we talk about in our chat history?\", \"session_id\": \"123\", \"chat_history\": [{\"role\": \"user\", \"content\": \"What color is the sky ?\"}, {\"role\": \"assistant\", \"content\": \"the sky is blue.\"}]}"
+        -d "{\"query\": \"What is this paper about?\", \"session_id\": \"123\", \"doc_id\": \"d0ddc503-cb48-47fb-be92-298ac322369d\"}"
 
 # Start the FastAPI server with correct PYTHONPATH
 serve:
@@ -89,7 +84,7 @@ docker-build-lambda:
 
 
 docker-up:
-    docker compose up -d
+    docker compose up
 
 docker-down:
     docker compose down
@@ -110,3 +105,11 @@ ci-build-and-push:
 # Vector store
 db-login-local:
     docker exec -it backend-db-1 psql -U postgres -d pdf_chat
+
+# Docker cleanup commands
+docker-nuke-all:
+    # Stop and remove all containers
+    docker stop $(docker ps -aq) || true
+    docker rm $(docker ps -aq) || true
+    # Remove all images
+    docker rmi $(docker images -q) || true

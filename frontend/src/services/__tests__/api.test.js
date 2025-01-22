@@ -6,7 +6,7 @@ vi.mock('axios')
 
 describe('api', () => {
   describe('sendQuery', () => {
-    it('formats chat history correctly', async () => {
+    it('sends query with correct format', async () => {
       // Arrange
       const mockResponse = { data: { message: 'Success' } }
       axios.post.mockResolvedValue(mockResponse)
@@ -14,25 +14,30 @@ describe('api', () => {
       const query = 'test query'
       const sessionId = 'test-session'
       const docId = 'test-doc'
-      const chatHistory = [
-        { type: 'user', content: 'Hello' },
-        { type: 'assistant', content: 'Hi there' }
-      ]
 
       // Act
-      const result = await sendQuery(query, sessionId, docId, chatHistory)
+      const result = await sendQuery(query, sessionId, docId)
 
       // Assert
       expect(axios.post).toHaveBeenCalledWith(expect.any(String), {
         query,
         session_id: sessionId,
-        doc_id: docId,
-        chat_history: [
-          { role: 'user', content: 'Hello' },
-          { role: 'assistant', content: 'Hi there' }
-        ]
+        doc_id: docId
       })
       expect(result).toEqual(mockResponse.data)
+    })
+
+    it('handles errors correctly', async () => {
+      // Arrange
+      const mockError = new Error('API Error')
+      axios.post.mockRejectedValue(mockError)
+
+      const query = 'test query'
+      const sessionId = 'test-session'
+      const docId = 'test-doc'
+
+      // Act & Assert
+      await expect(sendQuery(query, sessionId, docId)).rejects.toThrow('API Error')
     })
   })
 })

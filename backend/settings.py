@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     db_name: str = Field("pdf_chat", env="DB_NAME")
 
     use_postgres_db: bool = Field(True, env="USE_POSTGRES_DB")
+    document_store_type: str = Field("s3", env="DOCUMENT_STORE_TYPE")
+
+    s3_bucket_name: str = Field("pdf-chat-hub", env="S3_BUCKET_NAME")
 
     @property
     def connection_string(self):
