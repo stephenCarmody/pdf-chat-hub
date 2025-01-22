@@ -101,7 +101,7 @@ lambda-deploy:
     LATEST_IMAGE=$(just ecr-get-latest-image-tag) && \
     aws lambda update-function-code \
         --function-name pdf-chat-api \
-        --image-uri {{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/{{ECR_REPO_NAME}}:$LATEST_IMAGE
+        --image-uri {{ECR_URL}}/{{ECR_REPO_NAME}}:$LATEST_IMAGE
 
 ci-build-and-push:
     just docker-build-lambda
