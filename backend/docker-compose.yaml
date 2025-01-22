@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -11,8 +11,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./dev/init-pg-vector.sql:/docker-entrypoint-initdb.d/init-pg-vector.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -d pdf_chat -c \"SELECT 1 FROM pg_extension WHERE extname = 'vector'\""]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,7 +23,6 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/pdf_chat
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
       - "8000:8000"

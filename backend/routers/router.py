@@ -77,3 +77,4 @@ async def upload_file(
     except Exception as e:
         logger.exception("Upload failed with error:")
         raise HTTPException(status_code=500, detail=str(e))
+
