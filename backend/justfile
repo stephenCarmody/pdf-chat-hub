@@ -89,3 +89,8 @@ lambda-deploy:
     aws lambda update-function-code \
         --function-name pdf-chat-api \
         --image-uri {{AWS_ACCOUNT_ID}}.dkr.ecr.{{AWS_REGION}}.amazonaws.com/{{ECR_REPO_NAME}}:$LATEST_IMAGE
+
+
+# Vector store
+db-login-local:
+    docker exec -it backend-db-1 psql -U postgres -d pdf_chat
