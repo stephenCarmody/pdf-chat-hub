@@ -34,7 +34,9 @@ class InMemoryStore(VectorStore):
 
     def __init__(self, embeddings: Embeddings):
         self.store = InMemoryVectorStore(embeddings)
-        self.docs_metadata: Dict[str, Document] = {}  # Track document metadata for filtering
+        self.docs_metadata: Dict[str, Document] = (
+            {}
+        )  # Track document metadata for filtering
 
     def add_documents(
         self, documents: List[Document], session_id: str, doc_id: str
@@ -48,6 +50,7 @@ class InMemoryStore(VectorStore):
 
     def get_retriever(self, session_id: str, doc_id: str) -> VectorStoreRetriever:
         """Retrieve documents from the vector store that match the session and doc identifiers."""
+
         def filter_fn(doc: Document) -> bool:
             return (
                 doc.metadata.get("session_id") == session_id
