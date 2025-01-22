@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
 import boto3
-import psycopg2
+import psycopg
 from botocore.exceptions import ClientError
 from psycopg2.extras import RealDictCursor
 
