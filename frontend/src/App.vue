@@ -4,6 +4,7 @@
     <PdfSidebar
       :uploaded-pdfs="uploadedPdfs"
       :is-uploading="isUploading"
+      :is-session-initialized="!!sessionId"
       @file-upload="handleFileUpload"
       @select-pdf="selectPdf"
     />

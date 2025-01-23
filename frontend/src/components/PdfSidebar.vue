@@ -3,16 +3,16 @@
     <div class="upload-button">
       <label
         class="upload-label"
-        :class="{ 'opacity-50 cursor-not-allowed': isUploading }"
+        :class="{ 'opacity-50 cursor-not-allowed': isUploading || !isSessionInitialized }"
       >
         <FileText class="icon" />
-        <span>Upload PDF</span>
+        <span>{{ isSessionInitialized ? 'Upload PDF' : 'Initializing...' }}</span>
         <input
           type="file"
           accept=".pdf"
           class="hidden-input"
           @change="$emit('file-upload', $event)"
-          :disabled="isUploading"
+          :disabled="isUploading || !isSessionInitialized"
         />
       </label>
     </div>
@@ -39,7 +39,11 @@ import { FileText } from 'lucide-vue-next'
 
 defineProps({
   uploadedPdfs: Array,
-  isUploading: Boolean
+  isUploading: Boolean,
+  isSessionInitialized: {
+    type: Boolean,
+    default: false
+  }
 })
 
 defineEmits(['file-upload', 'select-pdf'])
