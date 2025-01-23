@@ -15,6 +15,9 @@ class Settings(BaseSettings):
 
     s3_bucket_name: str = Field("pdf-chat-lambda-state", env="S3_BUCKET_NAME")
 
+    embedding_model: str = Field("text-embedding-3-large", env="EMBEDDING_MODEL")
+    embedding_size: int = Field(1536, env="EMBEDDING_SIZE")
+
     @property
     def connection_string(self):
         return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"

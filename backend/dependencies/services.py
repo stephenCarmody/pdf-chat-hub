@@ -18,7 +18,7 @@ from settings import settings
 
 def get_vector_store() -> VectorStore:
     """Get's the correct vector store implementation based on the environment."""
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    embeddings = OpenAIEmbeddings(model=settings.embedding_model)
 
     if settings.use_postgres_db:
         return PGVectorStore(

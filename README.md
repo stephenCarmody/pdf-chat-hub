@@ -4,6 +4,10 @@
 
 This is a simple chatbot that can answer questions about a PDF file.
 
+## Warning
+
+As this is a serverless application, it may take a few seconds to warm up (The Upload PDF button is disable until the lambda is ready) and the first document upload may take a few seconds to complete (as the database needs to be warmed up).
+
 ## Setup
 
 1. Clone the repository

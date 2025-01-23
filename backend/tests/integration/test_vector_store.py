@@ -13,7 +13,7 @@ from settings import settings
 def vector_store():
     """Fixture that creates and tears down a vector store"""
     store = PGVectorStore(
-        embeddings=FakeEmbeddings(size=1536),  # Same dimension as OpenAI embeddings
+        embeddings=FakeEmbeddings(size=settings.embedding_size),
         connection_string=settings.connection_string,
         collection_name="test_documents",
     )

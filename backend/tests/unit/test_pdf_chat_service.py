@@ -11,7 +11,7 @@ from brain.summariser import SummaryChain
 from repositories.session_db import InMemoryDocumentStore
 from repositories.vector_db import InMemoryStore
 from services.pdf_chat_service import PDFChatService
-
+from settings import settings
 
 @pytest.fixture(autouse=True)
 def mock_openai_dependencies():
@@ -33,7 +33,7 @@ def mock_openai_dependencies():
 def mock_chat_history():
     """Mock PostgresChatMessageHistory for all tests."""
 
-    def create_mock_history(connection_string, session_id):
+    def create_mock_history():
         mock_history = Mock()
         mock_history.messages = []
         mock_history.add_user_message = Mock()
@@ -62,7 +62,7 @@ def mock_chains():
 @pytest.fixture
 def vector_store():
     """Create an InMemoryStore instance for testing."""
-    return InMemoryStore(embeddings=FakeEmbeddings(size=1536))
+    return InMemoryStore(embeddings=FakeEmbeddings(size=settings.embedding_size))
 
 
 @pytest.fixture

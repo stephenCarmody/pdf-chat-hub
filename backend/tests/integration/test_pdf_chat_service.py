@@ -30,7 +30,7 @@ def test_pdf_path():
 @pytest.fixture(scope="module")
 def vector_store(connection_string):
     """Create a real PGVector store instance for testing."""
-    embeddings = FakeEmbeddings(size=1536)
+    embeddings = FakeEmbeddings(size=settings.embedding_size)
     store = PGVectorStore(
         embeddings=embeddings,
         connection_string=connection_string,
