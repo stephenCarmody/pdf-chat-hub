@@ -3,11 +3,14 @@ import uuid
 from pathlib import Path
 from typing import Annotated
 
+import psycopg
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from dependencies.services import get_pdf_service
 from models.api_models import AppInfo, QueryRequest
 from services.pdf_chat_service import PDFChatService
+from settings import settings
+from backend.utills.db_utils import test_db_connection, trigger_db_wakeup
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,14 @@ def read_root():
         version="0.1.0",
         description="A simple chatbot that can answer questions about a PDF file.",
     )
+
+
+@router.get("/wake-up")
+def wake_up():
+    """Endpoint to trigger RDS instance wake-up."""
+    logger.info("Triggering RDS instance wake-up")
+    trigger_db_wakeup()
+    return {"status": "ok", "message": "Database wake-up triggered"}
 
 
 @router.get("/session")

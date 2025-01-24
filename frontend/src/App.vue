@@ -66,7 +66,17 @@ const getSessionId = async () => {
   }
 }
 
+const wakeUpBackend = async () => {
+  try {
+    await axios.get(`${API_URL}/wake-up`)
+    console.log('Backend warmed up successfully')
+  } catch (error) {
+    console.error('Failed to wake up backend:', error)
+  }
+}
+
 onMounted(async () => {
+  await wakeUpBackend()
   await getSessionId()
 })
 
