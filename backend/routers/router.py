@@ -5,11 +5,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from utills.db_utils import trigger_db_wakeup
 from dependencies.services import get_pdf_service
 from models.api_models import AppInfo, QueryRequest
 from services.pdf_chat_service import PDFChatService
 from settings import settings
+from utills.db_utils import trigger_db_wakeup
 
 logger = logging.getLogger(__name__)
 
