@@ -6,7 +6,7 @@
         :class="{ 'opacity-50 cursor-not-allowed': isUploading || !isSessionInitialized }"
       >
         <FileText class="icon" />
-        <span>{{ isSessionInitialized ? 'Upload PDF' : 'Initializing...' }}</span>
+        <span>{{ loadingText }}</span>
         <input
           type="file"
           accept=".pdf"
@@ -36,13 +36,33 @@
 
 <script setup>
 import { FileText } from 'lucide-vue-next'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-defineProps({
+const dots = ref('.')
+const intervalId = ref(null)
+
+const props = defineProps({
   uploadedPdfs: Array,
   isUploading: Boolean,
   isSessionInitialized: {
     type: Boolean,
     default: false
+  }
+})
+
+const loadingText = computed(() => {
+  return props.isSessionInitialized ? 'Upload PDF' : `Initializing${dots.value}`
+})
+
+onMounted(() => {
+  intervalId.value = setInterval(() => {
+    dots.value = dots.value.length >= 3 ? '.' : dots.value + '.'
+  }, 500)
+})
+
+onUnmounted(() => {
+  if (intervalId.value) {
+    clearInterval(intervalId.value)
   }
 })
 
