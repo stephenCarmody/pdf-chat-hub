@@ -29,6 +29,7 @@ isort = "^5.13.2"
 black = "^24.10.0"
 pytest = "^8.3.4"
 pytest-mock = "^3.14.0"
+pre-commit = "^3.6.2"
 
 [tool.pytest.ini_options]
 markers = [

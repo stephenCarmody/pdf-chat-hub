@@ -1,0 +1,18 @@
+repos:
+  - repo: local
+    hooks:
+      - id: unit-tests
+        name: Run unit tests
+        entry: bash -c 'cd backend && just test-unit'
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [commit]
+
+      - id: lint-fix
+        name: Run linting fixes
+        entry: bash -c 'cd backend && just lint-fix'
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [commit] 

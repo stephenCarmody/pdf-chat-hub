@@ -34,7 +34,7 @@ def mock_openai_dependencies():
 def mock_chat_history():
     """Mock PostgresChatMessageHistory for all tests."""
 
-    def create_mock_history():
+    def create_mock_history(connection_string=None, session_id=None):
         mock_history = Mock()
         mock_history.messages = []
         mock_history.add_user_message = Mock()
