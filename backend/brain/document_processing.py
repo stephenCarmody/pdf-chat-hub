@@ -1,4 +1,4 @@
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyMuPDFLoader
 
 # TODO: Finish class for DocumentParser
@@ -31,8 +31,8 @@ def load_pdf(file_path: str) -> list:
 
 def chunk_docs(pages: list) -> list:
     """Chunk a list of pages into a list of documents."""
-    text_splitter = CharacterTextSplitter(
-        chunk_size=1000, chunk_overlap=150, separator="\n"
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500, separators=[".", "?", "!"], chunk_overlap=200
     )
     docs = text_splitter.split_documents(pages)
     return docs
