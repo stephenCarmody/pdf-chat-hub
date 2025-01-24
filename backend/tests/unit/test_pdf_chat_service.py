@@ -13,6 +13,7 @@ from repositories.vector_db import InMemoryStore
 from services.pdf_chat_service import PDFChatService
 from settings import settings
 
+
 @pytest.fixture(autouse=True)
 def mock_openai_dependencies():
     """Mock OpenAI dependencies with fake implementations for all tests."""
