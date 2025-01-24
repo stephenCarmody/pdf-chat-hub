@@ -3,10 +3,9 @@ import uuid
 from pathlib import Path
 from typing import Annotated
 
-import psycopg
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from backend.utills.db_utils import test_db_connection, trigger_db_wakeup
+from utills.db_utils import trigger_db_wakeup
 from dependencies.services import get_pdf_service
 from models.api_models import AppInfo, QueryRequest
 from services.pdf_chat_service import PDFChatService

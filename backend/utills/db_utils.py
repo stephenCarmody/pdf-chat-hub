@@ -2,7 +2,6 @@ import logging
 from typing import Tuple
 
 import psycopg
-from fastapi import HTTPException
 
 from settings import settings
 
