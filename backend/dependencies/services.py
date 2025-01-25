@@ -3,6 +3,7 @@ import os
 from langchain_core.vectorstores import VectorStore
 from langchain_openai import OpenAIEmbeddings
 
+from brain.document_processing import DocumentProcessor
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
 from repositories.session_db import (
@@ -42,6 +43,7 @@ def get_document_store() -> DocumentStore:
 def get_pdf_service() -> PDFChatService:
     """Dependency provider for PDFChatService"""
     return PDFChatService(
+        document_processor=DocumentProcessor(),
         vector_store=get_vector_store(),
         document_store=get_document_store(),
         rag_chain=RAGChain(),

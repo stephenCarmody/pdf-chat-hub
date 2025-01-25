@@ -1,11 +1,10 @@
 import logging
 import uuid
-from typing import List, Optional, Tuple
 
 from langchain.schema import Document
 from langchain_community.chat_message_histories import PostgresChatMessageHistory
 
-from brain.document_processing import chunk_docs, load_pdf
+from brain.document_processing import DocumentProcessor
 from brain.model_router import create_router
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
@@ -20,12 +19,14 @@ logger.setLevel(logging.INFO)
 class PDFChatService:
     def __init__(
         self,
+        document_processor: DocumentProcessor,
         vector_store: VectorStore,
         document_store: DocumentStore,
         rag_chain: RAGChain,
         summary_chain: SummaryChain,
     ):
         logger.info("Initializing PDFChatService")
+        self.document_processor = document_processor
         self.rag_chain = rag_chain
         self.summary_chain = summary_chain
         self.vector_store = vector_store
@@ -86,10 +87,10 @@ class PDFChatService:
         logger.info(f"Starting upload process for session_id: {session_id}")
 
         try:
-            pages = load_pdf(file_path)
+            pages = self.document_processor.load_pdf(file_path)
             logger.info(f"Successfully loaded PDF with {len(pages)} pages")
 
-            docs = chunk_docs(pages)
+            docs = self.document_processor.chunk_docs(pages)
             doc_id = str(uuid.uuid4())
 
             # Prepare and store full text for summarization

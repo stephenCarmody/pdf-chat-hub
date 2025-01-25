@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from langchain_community.embeddings import FakeEmbeddings
 
-from brain.document_processing import chunk_docs, load_pdf
+from brain.document_processing import DocumentProcessor
 from repositories.vector_db import PGVectorStore
 from settings import settings
 
@@ -26,10 +26,11 @@ def bitcoin_chunks():
     """Fixture that loads and chunks the Bitcoin whitepaper"""
     # Load the PDF
     docs_folder = Path(__file__).parent.parent.parent / "docs"
-    pages = load_pdf(
+    processor = DocumentProcessor()
+    pages = processor.load_pdf(
         os.path.join(docs_folder, "Bitcoin - A Peer-to-Peer Electronic Cash System.pdf")
     )
-    documents = chunk_docs(pages)
+    documents = processor.chunk_docs(pages)
     return documents
 
 

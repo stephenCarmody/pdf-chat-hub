@@ -6,6 +6,7 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain_community.embeddings import FakeEmbeddings
 from langchain_community.llms import FakeListLLM
 
+from brain.document_processing import DocumentProcessor
 from brain.rag import RAGChain
 from brain.summariser import SummaryChain
 from repositories.session_db import InMemoryDocumentStore
@@ -77,6 +78,7 @@ def pdf_chat_service(mock_chains, vector_store, document_store):
     """Create a PDFChatService instance for testing."""
     mock_rag_chain, mock_summary_chain = mock_chains
     return PDFChatService(
+        document_processor=DocumentProcessor(),
         vector_store=vector_store,
         document_store=document_store,
         rag_chain=mock_rag_chain,
