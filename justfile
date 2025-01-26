@@ -2,12 +2,23 @@ ECR_URL := "031421732210.dkr.ecr.eu-west-1.amazonaws.com"
 
 VERSION := `git rev-parse --short HEAD`
 
+init:
+    just backend/init
+    just frontend/init
+
+serve-local:
+    just backend/docker-up &
+    just serve-frontend-local-to-local
+
 clean:
     # remove all pycache
     find . -type d -name "__pycache__" -exec rm -rf {} +
 
-serve-frontend-local:
-    cd frontend && npm run dev
+serve-frontend-local-to-local:
+    cd frontend && NODE_ENV=development npm run dev
+
+serve-frontend-local-to-prod:
+    cd frontend && NODE_ENV=production npm run dev
 
 serve-backend-local:
     cd backend && uvicorn app:app --reload --log-level debug

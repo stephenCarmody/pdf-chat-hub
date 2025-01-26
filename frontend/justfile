@@ -1,3 +1,6 @@
+init:
+    npm install
+
 format:
     npm run format
 
