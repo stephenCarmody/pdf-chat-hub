@@ -49,7 +49,7 @@ Implemented a `/warm-up` endpoint for faster response times that is called when 
 just serve-local
 ```
 
-Then navigate to [http://localhost:5173](http://localhost:5173) to use the application.
+Then go to [http://localhost:5173](http://localhost:5173) to use the application.
 
 ## Research & RAG Pipeline
 

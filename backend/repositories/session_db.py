@@ -55,9 +55,12 @@ class InMemoryDocumentStore(DocumentStore):
 
     def get_document(self, doc_id: str) -> Optional[str]:
         doc = self._docs.get(doc_id)
+        logger.info(f"Getting document {doc_id} from memory. Found: {doc is not None}")
         return doc["full_text"] if doc else None
 
 
+# TODO: Create a table for documents in the database
+# WARNING: This will not work as the table is not created automatically now.
 class PostgresDocumentStore(DocumentStore):
     def __init__(self):
         self.connection_string = settings.connection_string

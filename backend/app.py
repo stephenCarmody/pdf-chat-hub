@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 # Add this at the top of app.py, before any other imports
 logging.basicConfig(
@@ -18,6 +19,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from dependencies.services import services
 from routers.router import router
 
 logger = logging.getLogger(__name__)
@@ -26,9 +28,21 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize services on startup
+    logger.info("Initializing services...")
+    # Services will be lazily initialized on first use
+    yield
+    # Cleanup on shutdown
+    logger.info("Cleaning up services...")
+    services.document_store = None
+    services.vector_store = None
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
-    app = FastAPI()
+    app = FastAPI(lifespan=lifespan)
 
     # Get the API Gateway URL from the environment variable
     api_gateway_url = os.getenv(
