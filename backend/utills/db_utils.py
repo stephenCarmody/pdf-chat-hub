@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def test_db_connection() -> Tuple[bool, str]:
     """
-    Test the database connection and wake up the RDS instance if needed.
+    Test the database connection & wake up the RDS instance if needed.
     """
     try:
         with psycopg.connect(settings.connection_string) as conn:
