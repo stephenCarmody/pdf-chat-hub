@@ -1,8 +1,12 @@
-name: Manual Deployment
+name: CD Backend
 
 on:
-  workflow_dispatch:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["CI Backend"]
+    types:
+      - completed
+    branches: 
+      - main
 
 env:
   AWS_REGION: eu-west-1
@@ -12,6 +16,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

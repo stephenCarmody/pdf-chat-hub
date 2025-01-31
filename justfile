@@ -57,7 +57,10 @@ lambda-endpoint:
     cd infrastructure/prod && terraform output api_gateway_url
 
 lambda-logs:
-    aws logs tail /aws/lambda/pdf-chat-api --follow
+    aws logs tail /aws/lambda/pdf-chat-api --follow --since 30m
+
+lambda-describe:
+    aws lambda get-function --function-name pdf-chat-api
 
 
 # SECRETS
@@ -78,7 +81,7 @@ test-local-query:
     curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" -d @backend/test_payloads/query-request.json | jq
 
 test-lambda-root:
-    curl https://li6a6mcfp4.execute-api.eu-west-1.amazonaws.com/prod/
+    curl -v https://li6a6mcfp4.execute-api.eu-west-1.amazonaws.com/prod/
 
 test-lambda-query:
     curl -X POST https://li6a6mcfp4.execute-api.eu-west-1.amazonaws.com/prod/query \
